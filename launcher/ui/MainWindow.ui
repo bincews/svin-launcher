@@ -222,6 +222,7 @@
     <addaction name="separator"/>
     <addaction name="actionMoreNews"/>
     <addaction name="actionCheckUpdate"/>
+    <addaction name="actionProjectRepository"/>
     <addaction name="actionOpenWiki"/>
     <addaction name="actionAbout"/>
    </widget>
@@ -719,6 +720,11 @@
    </property>
    <property name="text">
     <string>Accounts</string>
+   </property>
+  </action>
+  <action name="actionProjectRepository">
+   <property name="text">
+    <string notr="true">GitHub — Svin Launcher</string>
    </property>
   </action>
   <action name="actionOpenWiki">

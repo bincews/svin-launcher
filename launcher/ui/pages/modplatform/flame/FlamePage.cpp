@@ -39,6 +39,7 @@
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/widgets/ModFilterWidget.h"
 #include "ui_FlamePage.h"
+#include "BuildConfig.h"
 
 #include <QKeyEvent>
 #include <memory>
@@ -54,6 +55,7 @@ FlamePage::FlamePage(NewInstanceDialog* dialog, QWidget* parent)
     : QWidget(parent), m_ui(new Ui::FlamePage), m_dialog(dialog), m_listModel(new Flame::ListModel(this)), m_fetchProgress(this, false)
 {
     m_ui->setupUi(this);
+    m_ui->label_2->setText(m_ui->label_2->text().replace(QStringLiteral("Prism Launcher"), BuildConfig.LAUNCHER_DISPLAYNAME));
 
     m_ui->packView->setModel(m_listModel);
 

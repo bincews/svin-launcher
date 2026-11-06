@@ -39,6 +39,7 @@
 #include "BuildConfig.h"
 #include "Markdown.h"
 #include "StringUtils.h"
+#include "translations/TranslationsModel.h"
 #include "ui_AboutDialog.h"
 
 #include <net/NetJob.h>
@@ -91,6 +92,10 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
 
     ui->icon->setPixmap(APPLICATION->logo().pixmap(64));
     ui->title->setText(launcherName);
+    const bool russian = APPLICATION->translations()->selectedLanguage().startsWith(QStringLiteral("ru"));
+    const QString forkNotice = russian ? QStringLiteral("Неофициальный форк Prism Launcher.")
+                                       : tr("Unofficial fork of Prism Launcher.");
+    ui->aboutLabel->setText(ui->aboutLabel->text() + QStringLiteral("<p>%1</p>").arg(forkNotice.toHtmlEscaped()));
 
     ui->versionLabel->setText(BuildConfig.printableVersionString());
 

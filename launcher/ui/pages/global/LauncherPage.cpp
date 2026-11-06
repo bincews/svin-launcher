@@ -71,6 +71,7 @@ enum InstSortMode {
 LauncherPage::LauncherPage(QWidget* parent) : QWidget(parent), ui(new Ui::LauncherPage)
 {
     ui->setupUi(this);
+    ui->labelJavaDir->setToolTip(ui->labelJavaDir->toolTip().replace(QStringLiteral("Prism Launcher"), BuildConfig.LAUNCHER_DISPLAYNAME));
 
     ui->sortingModeGroup->setId(ui->sortByNameBtn, Sort_Name);
     ui->sortingModeGroup->setId(ui->sortLastLaunchedBtn, Sort_LastLaunch);

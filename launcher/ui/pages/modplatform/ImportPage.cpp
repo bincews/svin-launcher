@@ -50,6 +50,7 @@
 #include "modplatform/flame/FlameAPI.h"
 
 #include "Json.h"
+#include "BuildConfig.h"
 
 #include "InstanceImportTask.h"
 #include "net/NetJob.h"
@@ -74,6 +75,7 @@ class UrlValidator : public QValidator {
 ImportPage::ImportPage(NewInstanceDialog* dialog, QWidget* parent) : QWidget(parent), ui(new Ui::ImportPage), dialog(dialog)
 {
     ui->setupUi(this);
+    ui->label_2->setText(ui->label_2->text().replace(QStringLiteral("Prism Launcher"), BuildConfig.LAUNCHER_DISPLAYNAME));
     ui->modpackEdit->setValidator(new UrlValidator(ui->modpackEdit));
     connect(ui->modpackEdit, &QLineEdit::textChanged, this, &ImportPage::updateState);
 }

@@ -83,6 +83,7 @@ class MainWindow : public QMainWindow {
     void isClosing();
 
    protected:
+    void showEvent(QShowEvent* event) override;
     QMenu* createPopupMenu() override;
 
    private slots:

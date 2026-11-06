@@ -67,6 +67,7 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QShortcut>
+#include <QShowEvent>
 #include <QStatusBar>
 #include <QTextEdit>
 #include <QToolBar>
@@ -217,6 +218,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->actionHelpButton->menu()->addActions(ui->helpMenu->actions());
         ui->actionHelpButton->menu()->removeAction(ui->actionCheckUpdate);
         helpMenuButton->setPopupMode(QToolButton::InstantPopup);
+        connect(ui->actionProjectRepository, &QAction::triggered, this,
+                [] { DesktopServices::openUrl(QUrl(BuildConfig.LAUNCHER_GIT)); });
 
         auto accountMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionAccountsButton));
         accountMenuButton->setPopupMode(QToolButton::InstantPopup);
@@ -236,6 +239,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->actionREDDIT->setVisible(!BuildConfig.SUBREDDIT_URL.isEmpty());
 
         ui->actionCheckUpdate->setVisible(APPLICATION->updaterEnabled());
+        ui->newsToolBar->toggleViewAction()->setVisible(!BuildConfig.NEWS_RSS_URL.isEmpty());
 
 #ifndef Q_OS_MAC
         ui->actionAddToPATH->setVisible(false);
@@ -402,7 +406,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // load the news
     {
-        m_newsChecker->reloadNews();
+        if (!BuildConfig.NEWS_RSS_URL.isEmpty())
+            m_newsChecker->reloadNews();
         updateNewsLabel();
     }
 
@@ -452,6 +457,9 @@ void MainWindow::retranslateUi()
     }
 
     ui->retranslateUi(this);
+    ui->actionOpenWiki->setText(tr("Help"));
+    ui->actionOpenWiki->setToolTip(tr("Get help with %1 or Minecraft.").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+    ui->actionExportInstanceZip->setText(QStringLiteral("%1 (zip)").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
 
     MinecraftAccountPtr defaultAccount = APPLICATION->accounts()->defaultAccount();
     if (defaultAccount) {
@@ -474,6 +482,13 @@ void MainWindow::retranslateUi()
 }
 
 MainWindow::~MainWindow() {}
+
+void MainWindow::showEvent(QShowEvent* event)
+{
+    QMainWindow::showEvent(event);
+    if (BuildConfig.NEWS_RSS_URL.isEmpty())
+        ui->newsToolBar->hide();
+}
 
 QMenu* MainWindow::createPopupMenu()
 {
@@ -797,6 +812,11 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
 
 void MainWindow::updateNewsLabel()
 {
+    if (BuildConfig.NEWS_RSS_URL.isEmpty()) {
+        ui->newsToolBar->hide();
+        ui->actionMoreNews->setVisible(false);
+        return;
+    }
     if (m_newsChecker->isLoadingNews()) {
         newsLabel->setText(tr("Loading news..."));
         newsLabel->setEnabled(false);
@@ -944,7 +964,8 @@ void MainWindow::processURLs(QList<QUrl> urls)
                     CustomMessageBox::selectable(
                         this, tr("Error"),
                         tr("Unsupported Modrinth link.\n\nPrism Launcher currently only supports modpack links such as "
-                           "modrinth://modpack/fabulously-optimized."),
+                           "modrinth://modpack/fabulously-optimized.")
+                            .replace(QStringLiteral("Prism Launcher"), BuildConfig.LAUNCHER_DISPLAYNAME),
                         QMessageBox::Critical)
                         ->show();
                 }
