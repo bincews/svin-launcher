@@ -39,11 +39,15 @@
 
 #if defined Q_OS_WIN32
 #include "console/WindowsConsole.h"
+#include <windows.h>
+#include <shobjidl.h>
 #endif
 
 int main(int argc, char* argv[])
 {
 #if defined Q_OS_WIN32
+    // Keep Windows taskbar identity separate from older Prism-based builds.
+    SetCurrentProcessExplicitAppUserModelID(L"bincews.SvinLauncher");
     // used on Windows to attach the standard IO streams
     console::WindowsConsoleGuard _consoleGuard;
 #endif

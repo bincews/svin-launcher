@@ -1321,6 +1321,9 @@ if(${Launcher_USE_PCH})
 endif()
 
 target_link_libraries(${Launcher_Name} Launcher_logic)
+if(WIN32)
+    target_link_libraries(${Launcher_Name} shell32)
+endif()
 
 if(DEFINED Launcher_APP_BINARY_NAME)
     set_target_properties(${Launcher_Name} PROPERTIES OUTPUT_NAME "${Launcher_APP_BINARY_NAME}")
