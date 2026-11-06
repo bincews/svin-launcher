@@ -1,0 +1,50 @@
+name: Build Prism Local for Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    env:
+      BUILD_PLATFORM: unofficial-local
+      ARTIFACT_NAME: Windows-MSVC-Qt6
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Setup dependencies using upstream build recipe
+        uses: ./.github/actions/setup-dependencies
+        with:
+          build-type: Release
+          artifact-name: Windows-MSVC
+          vcvars-arch: amd64
+          qt-version: 6.11.2
+      - name: Configure
+        shell: pwsh
+        env:
+          LOCAL_CURSEFORGE_API_KEY: ${{ secrets.LOCAL_CURSEFORGE_API_KEY }}
+          LOCAL_MSA_CLIENT_ID: ${{ vars.LOCAL_MSA_CLIENT_ID }}
+        run: |
+          cmake --preset ci "-DVCPKG_HOST_TRIPLET=$env:VCPKG_TRIPLET" "-DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET" "-DLauncher_CURSEFORGE_API_KEY=$env:LOCAL_CURSEFORGE_API_KEY" "-DLauncher_MSA_CLIENT_ID=$env:LOCAL_MSA_CLIENT_ID"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compile
+        run: cmake --build --preset ci --config Release
+      - name: Test
+        run: ctest --preset ci --build-config Release
+      - name: Install portable build
+        shell: pwsh
+        run: |
+          cmake --install build --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --install build --config Release --component portable
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item LOCAL-FORK.md, LICENSE, COPYING.md -Destination install
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Prism-Local-Windows-x64-portable
+          path: install/
+          if-no-files-found: error

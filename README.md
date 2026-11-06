@@ -1,3 +1,10 @@
+# Prism Local (unofficial)
+
+Personal offline-account fork, modified 2026-11-06. This is not an official
+Prism Launcher build and is not endorsed by or affiliated with that project.
+See [LOCAL-FORK.md](LOCAL-FORK.md) for changes, build instructions and verification limits.
+The upstream README follows.
+
 <p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/program_info/org.prismlauncher.PrismLauncher.logo-darkmode.svg">
