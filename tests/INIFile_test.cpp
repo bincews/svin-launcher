@@ -1,6 +1,8 @@
 #include <QTest>
 
 #include <settings/INIFile.h>
+#include <settings/INISettingsObject.h>
+#include <QTemporaryDir>
 #include <QList>
 #include <QSettings>
 #include <QTemporaryFile>
@@ -41,6 +43,40 @@ class IniFileTest : public QObject {
    private slots:
     void initTestCase() {}
     void cleanupTestCase() {}
+
+    void legacySettingsMigration_data()
+    {
+        QTest::addColumn<bool>("preferredExists");
+        QTest::newRow("copy-legacy-settings") << false;
+        QTest::newRow("keep-existing-svin-settings") << true;
+    }
+
+    void legacySettingsMigration()
+    {
+        QFETCH(bool, preferredExists);
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const auto preferred = dir.filePath("svinlauncher.cfg");
+        const auto legacy = dir.filePath("prismlauncher.cfg");
+        const QByteArray legacyData("[General]\nLanguage=ru\nMaxMemAlloc=4096\n");
+        QFile legacyFile(legacy);
+        QVERIFY(legacyFile.open(QIODevice::WriteOnly));
+        QCOMPARE(legacyFile.write(legacyData), legacyData.size());
+        legacyFile.close();
+        if (preferredExists) {
+            QFile preferredFile(preferred);
+            QVERIFY(preferredFile.open(QIODevice::WriteOnly));
+            QVERIFY(preferredFile.write("[General]\nLanguage=en\nMaxMemAlloc=2048\n") > 0);
+        }
+        INISettingsObject settings(QStringList{ preferred, legacy });
+        settings.registerSetting("Language", "default");
+        settings.registerSetting("MaxMemAlloc", 0);
+        QCOMPARE(settings.filePath(), preferred);
+        QCOMPARE(settings.get("Language").toString(), preferredExists ? QString("en") : QString("ru"));
+        QCOMPARE(settings.get("MaxMemAlloc").toInt(), preferredExists ? 2048 : 4096);
+        QVERIFY(legacyFile.open(QIODevice::ReadOnly));
+        QCOMPARE(legacyFile.readAll(), legacyData);
+    }
 
     void test_Escape_data()
     {

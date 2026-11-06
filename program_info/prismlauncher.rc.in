@@ -19,6 +19,8 @@ BEGIN
                         VALUE "FileDescription", "@Launcher_DisplayName@"
                         VALUE "FileVersion", "@Launcher_VERSION_NAME4@"
                         VALUE "ProductName", "@Launcher_DisplayName@"
+                        VALUE "InternalName", "@Launcher_APP_BINARY_NAME@"
+                        VALUE "OriginalFilename", "@Launcher_APP_BINARY_NAME@.exe"
                         VALUE "ProductVersion", "@Launcher_VERSION_NAME4@"
                 END
         END

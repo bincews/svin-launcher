@@ -23,7 +23,7 @@ cmake --install build --config Release
 cmake --install build --config Release --component portable
 ```
 
-Результат — `install/prismlauncher.exe` и зависимости рядом с ним.
+Результат — `install/svinlauncher.exe` и зависимости рядом с ним.
 Для переносной сборки нужны DLL из
 `VC/Redist/MSVC/<версия>/x64/Microsoft.VC143.CRT` установленной Visual Studio.
 

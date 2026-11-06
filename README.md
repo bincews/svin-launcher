@@ -59,7 +59,7 @@ Svin — лаунчер Minecraft для Windows на базе [Prism Launcher](
 ## Текущая сборка
 
 Релиз **r1** — переносная сборка Windows x64. Исполняемый файл пока называется
-`prismlauncher.exe`, настройки — `prismlauncher.cfg`: имена сохранены для совместимости.
+`svinlauncher.exe`, настройки — `svinlauncher.cfg`. Настройки прежних версий переносятся автоматически.
 
 На Windows 11 проверены обычный и автономный запуск Minecraft 1.21.10,
 Fabric 0.19.5, набор из девяти модов и Complementary Reimagined.

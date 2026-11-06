@@ -75,3 +75,5 @@ flatbuild
 /screenshots/
 /crash-reports/
 /backup-before-*/
+
+/svinlauncher.cfg
