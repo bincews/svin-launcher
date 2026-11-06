@@ -1,5 +1,5 @@
 name: Ошибка Svin Launcher
-description: Сообщить об ошибке в этом форке
+description: Сообщить об ошибке
 body:
   - type: input
     id: version
@@ -17,7 +17,7 @@ body:
     id: steps
     attributes:
       label: Как повторить ошибку
-      description: Какие действия приводят к проблеме и какой результат ожидался?
+      description: Что произошло и как это повторить?
     validations:
       required: true
   - type: textarea

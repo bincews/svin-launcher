@@ -4,47 +4,21 @@
 
 # Svin Launcher
 
-Лаунчер Minecraft для Windows на базе [Prism Launcher](https://github.com/PrismLauncher/PrismLauncher).
-Можно играть с локальным профилем и держать несколько сборок отдельно:
-у каждой свои моды, настройки и миры.
+Лаунчер Minecraft для Windows. Форк [Prism Launcher](https://github.com/PrismLauncher/PrismLauncher)
+с локальными профилями и отдельными сборками для разных версий и наборов модов.
 
-## Что есть
+- Игра по нику без входа в Microsoft.
+- Загрузка файлов игры и автономный запуск.
+- Поддержка модов и шейдеров.
 
-- Локальный профиль без входа в Microsoft.
-- Загрузка файлов игры при обычном запуске и игра без интернета, когда всё уже скачано.
-- Отдельные сборки с модами и шейдерами.
-- Своя справка и ссылки на этот проект прямо в лаунчере.
+**[Скачать для Windows x64](https://github.com/bincews/svin-launcher/releases/latest)**
 
-Svin не обновляется поверх себя официальной версией Prism. Новые версии
-Minecraft при этом появляются в общем каталоге, как и раньше.
+[Справка](docs/HELP.md) · [Сборка из исходников](BUILDING.md) · [Изменения](LOCAL-FORK.md)
 
-## Запуск и сборка
+Вход Microsoft и каталог CurseForge требуют своих ключей приложения.
+Локальные профили и Modrinth доступны без них.
 
-Как собрать: [BUILDING.md](BUILDING.md). На GitHub для этого есть
-[Actions → Build Svin Launcher for Windows](https://github.com/bincews/svin-launcher/actions).
-Сценарий сборки на GitHub пока не проверен.
+## Основа проекта
 
-Готовую папку нужно распаковать целиком и запустить `prismlauncher.exe`.
-Имена exe и `prismlauncher.cfg` оставлены прежними для совместимости.
-Кнопка GitHub «Download ZIP» скачивает исходники, а не готовый лаунчер.
-
-Как добавить профиль, выбрать Java и поставить моды: [справка](docs/HELP.md).
-
-## Что нужно знать
-
-Первое скачивание игры требует интернета. Локальный профиль не подходит
-для серверов, которые проверяют лицензию Minecraft.
-
-Для входа Microsoft и каталога CurseForge нужны свои ключи приложения.
-Modrinth работает без них. Как задать ключи — в инструкции по сборке.
-
-Проверены Minecraft 1.21.10, Fabric 0.19.5, моды и Complementary Reimagined.
-Подробнее об изменениях и тестах — [LOCAL-FORK.md](LOCAL-FORK.md).
-
-## Исходный проект
-
-Svin — самостоятельный форк Prism Launcher. Лицензии и уведомления авторов
-Prism, PolyMC и MultiMC сохранены в [LICENSE](LICENSE) и [COPYING.md](COPYING.md).
-[Оригинальный README](docs/upstream/README.md) тоже оставлен в репозитории.
-
-Иконка взята из текстуры свиньи Minecraft: [подробнее](program_info/SVIN-BRANDING.md).
+Svin основан на Prism Launcher. Лицензии: [LICENSE](LICENSE), [COPYING.md](COPYING.md).
+[Исходный README](docs/upstream/README.md) · [Иконка](program_info/SVIN-BRANDING.md)
