@@ -93,9 +93,10 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
     ui->icon->setPixmap(APPLICATION->logo().pixmap(64));
     ui->title->setText(launcherName);
     const bool russian = APPLICATION->translations()->selectedLanguage().startsWith(QStringLiteral("ru"));
-    const QString forkNotice = russian ? QStringLiteral("Неофициальный форк Prism Launcher.")
-                                       : tr("Unofficial fork of Prism Launcher.");
-    ui->aboutLabel->setText(ui->aboutLabel->text() + QStringLiteral("<p>%1</p>").arg(forkNotice.toHtmlEscaped()));
+    const QString description = russian ? QStringLiteral("Лаунчер для Minecraft с отдельными сборками и локальными профилями.")
+                                        : tr("A Minecraft launcher with separate instances and local profiles.");
+    const QString forkNotice = russian ? QStringLiteral("Форк Prism Launcher.") : tr("A fork of Prism Launcher.");
+    ui->aboutLabel->setText(QStringLiteral("<p>%1</p><p>%2</p>").arg(description.toHtmlEscaped(), forkNotice.toHtmlEscaped()));
 
     ui->versionLabel->setText(BuildConfig.printableVersionString());
 

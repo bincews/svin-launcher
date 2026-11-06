@@ -46,7 +46,7 @@ void MinecraftLoadAndCheck::checkLaunchProfile()
 Result<> MinecraftLoadAndCheck::validateLaunchProfile(const LaunchProfile& profile)
 {
     if (profile.getProblemSeverity() == ProblemSeverity::Error || profile.getMainClass().isEmpty() || !profile.getMainJar()) {
-        return std::unexpected(tr("Minecraft components are incomplete or contain errors. Reload the version components before launching."));
+        return std::unexpected(tr("This version is incomplete. Reload its components before launching."));
     }
     return {};
 }

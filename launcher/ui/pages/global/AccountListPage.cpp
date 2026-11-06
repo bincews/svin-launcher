@@ -49,13 +49,14 @@
 #include "ui/dialogs/MSALoginDialog.h"
 
 #include "Application.h"
+#include "translations/TranslationsModel.h"
 
 AccountListPage::AccountListPage(QWidget* parent) : QMainWindow(parent), ui(new Ui::AccountListPage)
 {
     ui->setupUi(this);
-    ui->listView->setEmptyString(
-        tr("Welcome!\n"
-           "Select \"Add Offline\" to create a local profile, or \"Add Microsoft\" to link your Microsoft account."));
+    const bool russian = APPLICATION->translations()->selectedLanguage().startsWith(QStringLiteral("ru"));
+    ui->listView->setEmptyString(russian ? QStringLiteral("Добавь локальный профиль для игры по нику или войди в Microsoft.")
+                                       : tr("Add a local profile to play with a nickname, or sign in with Microsoft."));
     ui->listView->setEmptyMode(VersionListView::String);
     ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -140,7 +141,9 @@ void AccountListPage::on_actionAddMicrosoft_triggered()
 
 void AccountListPage::on_actionAddOffline_triggered()
 {
-    ChooseOfflineNameDialog dialog(tr("Please enter your desired username to add your offline account."), this);
+    const bool russian = APPLICATION->translations()->selectedLanguage().startsWith(QStringLiteral("ru"));
+    ChooseOfflineNameDialog dialog(russian ? QStringLiteral("Какой ник использовать в игре?") : tr("What name would you like to use in the game?"),
+                                   this);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }

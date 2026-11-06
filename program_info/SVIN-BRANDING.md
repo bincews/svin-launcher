@@ -1,13 +1,14 @@
-# Svin Launcher icon
+# Иконка Svin Launcher
 
-The pig face uses the original Minecraft Java Edition 1.21.10 texture
-`assets/minecraft/textures/entity/pig/temperate_pig.png` from the user's local
-client JAR. It combines the head's front UV region (8,8,8,8) with the snout's
-front UV region (17,17,4,3), placed at (2,4). No pixels were repainted.
+Это морда обычной розовой свиньи из Minecraft Java Edition 1.21.10.
+Использована текстура `assets/minecraft/textures/entity/pig/temperate_pig.png`.
+Пиксели не перерисованы, изображение увеличено без размытия.
 
-`svin-launcher.png` is a nearest-neighbor enlargement. The application SVG
-embeds that PNG, and `prismlauncher.ico` contains seven sizes (16–256 px).
+Для значка взяты лицевая сторона головы (8,8,8,8) и пятачок (17,17,4,3).
+Пятачок размещён в точке (2,4) на изображении головы размером 8×8.
 
-Minecraft artwork belongs to Mojang/Microsoft. This asset is separate from
-the launcher source code's license. Svin Launcher is an unofficial personal
-fork and is not endorsed by Mojang/Microsoft or the Prism Launcher team.
+`svin-launcher.png` — версия 256×256. SVG содержит тот же PNG,
+а `prismlauncher.ico` — семь размеров от 16 до 256 пикселей.
+
+Изображение Minecraft принадлежит Mojang/Microsoft. Лицензия исходников
+лаунчера не распространяется на эту текстуру.
