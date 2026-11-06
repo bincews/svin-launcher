@@ -2,6 +2,7 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+#include "LaunchController.h"
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/auth/AuthSession.h"
 #include "minecraft/auth/MinecraftAccount.h"
@@ -9,6 +10,69 @@
 class OfflineAccountTest : public QObject {
     Q_OBJECT
    private slots:
+    void launchMode_data()
+    {
+        QTest::addColumn<bool>("offlineProfile");
+        QTest::addColumn<bool>("microsoftProfile");
+        QTest::addColumn<LaunchMode>("requested");
+        QTest::addColumn<LaunchMode>("expected");
+        QTest::newRow("offline-normal") << true << false << LaunchMode::Normal << LaunchMode::Offline;
+        QTest::newRow("offline-explicit") << true << false << LaunchMode::Offline << LaunchMode::Offline;
+        QTest::newRow("offline-demo") << true << false << LaunchMode::Demo << LaunchMode::Demo;
+        QTest::newRow("no-account") << false << false << LaunchMode::Normal << LaunchMode::Demo;
+        QTest::newRow("microsoft-no-entitlement") << false << true << LaunchMode::Normal << LaunchMode::Demo;
+    }
+
+    void launchMode()
+    {
+        QFETCH(bool, offlineProfile);
+        QFETCH(bool, microsoftProfile);
+        QFETCH(LaunchMode, requested);
+        QFETCH(LaunchMode, expected);
+        LaunchController controller;
+        if (offlineProfile)
+            controller.setAccountToUse(MinecraftAccount::createOffline("LocalPlayer"));
+        else if (microsoftProfile)
+            controller.setAccountToUse(MinecraftAccount::createBlankMSA());
+        controller.setLaunchMode(requested);
+        QCOMPARE(controller.decideLaunchMode(), LaunchDecision::Continue);
+        QCOMPARE(controller.m_actualLaunchMode, expected);
+    }
+
+    void localProfileDownloads_data()
+    {
+        QTest::addColumn<LaunchMode>("requested");
+        QTest::addColumn<bool>("downloadsAllowed");
+        QTest::newRow("ordinary-launch-downloads-libraries") << LaunchMode::Normal << true;
+        QTest::newRow("explicit-offline-uses-cache-only") << LaunchMode::Offline << false;
+    }
+
+    void localProfileDownloads()
+    {
+        QFETCH(LaunchMode, requested);
+        QFETCH(bool, downloadsAllowed);
+        LaunchController controller;
+        controller.setAccountToUse(MinecraftAccount::createOffline("LocalPlayer"));
+        controller.setLaunchMode(requested);
+        QCOMPARE(controller.decideLaunchMode(), LaunchDecision::Continue);
+        const auto session = controller.createSession();
+        QCOMPARE(session->launchMode, LaunchMode::Offline);
+        QCOMPARE(session->canDownloadGameFiles(), downloadsAllowed);
+        QCOMPARE(session->access_token, QString("0"));
+        QCOMPARE(session->player_name, QString("LocalPlayer"));
+    }
+
+    void existingDownloadPolicyIsUnchanged()
+    {
+        AuthSession session;
+        session.launchMode = LaunchMode::Normal;
+        QVERIFY(session.canDownloadGameFiles());
+        session.launchMode = LaunchMode::Demo;
+        QVERIFY(session.canDownloadGameFiles());
+        session.launchMode = LaunchMode::Offline;
+        QVERIFY(!session.canDownloadGameFiles());
+    }
+
     void localProfileNeedsNoMicrosoftAccount()
     {
         AccountList accounts;

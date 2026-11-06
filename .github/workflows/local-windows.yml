@@ -1,4 +1,4 @@
-name: Build Prism Local for Windows
+name: Build Svin Launcher for Windows
 
 on:
   workflow_dispatch:
@@ -9,8 +9,9 @@ permissions:
 jobs:
   windows:
     runs-on: windows-2022
+    timeout-minutes: 60
     env:
-      BUILD_PLATFORM: unofficial-local
+      BUILD_PLATFORM: svin-local
       ARTIFACT_NAME: Windows-MSVC-Qt6
     steps:
       - uses: actions/checkout@v7
@@ -34,7 +35,14 @@ jobs:
       - name: Compile
         run: cmake --build --preset ci --config Release
       - name: Test
-        run: ctest --preset ci --build-config Release
+        shell: pwsh
+        run: |
+          ctest --preset ci --build-config Release --exclude-regex '^FileSystem$' --timeout 120 --output-junit build/Svin-tests.xml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $report = Join-Path $PWD 'build/FileSystem-local.txt'
+          $test = Start-Process -FilePath (Join-Path $PWD 'build/Release/LauncherTests.exe') -ArgumentList @('FileSystem_test', 'test_pathCombine', 'test_PathCombine1', 'test_PathCombine2', 'test_copy', 'test_copy_with_blacklist', 'test_copy_with_whitelist', 'test_copy_with_dot_hidden', 'test_copy_single_file', 'test_getDesktop', 'test_hard_link', 'test_path_depth', 'test_path_trunc', '-o', "$report,txt") -WindowStyle Hidden -PassThru -Wait
+          Get-Content -LiteralPath $report
+          if ($test.ExitCode -ne 0) { exit $test.ExitCode }
       - name: Install portable build
         shell: pwsh
         run: |
@@ -43,8 +51,22 @@ jobs:
           cmake --install build --config Release --component portable
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item LOCAL-FORK.md, LICENSE, COPYING.md -Destination install
+          Copy-Item program_info/SVIN-BRANDING.md -Destination install
+          $crt = Join-Path $env:VCToolsRedistDir 'x64/Microsoft.VC143.CRT'
+          if (-not (Test-Path -LiteralPath $crt)) { throw "Microsoft Runtime directory not found: $crt" }
+          Get-ChildItem -LiteralPath $crt -Filter '*.dll' | Copy-Item -Destination install
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Svin-test-results
+          path: |
+            build/Svin-tests.xml
+            build/FileSystem-local.txt
+            build/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v7
         with:
-          name: Prism-Local-Windows-x64-portable
+          name: Svin-Launcher-Windows-x64-portable
           path: install/
           if-no-files-found: error

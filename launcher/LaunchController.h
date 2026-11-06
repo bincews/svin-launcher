@@ -46,6 +46,7 @@ enum class LaunchDecision { Undecided, Continue, Abort };
 
 class LaunchController : public Task {
     Q_OBJECT
+    friend class OfflineAccountTest;
    public:
     void executeTask() override;
 
@@ -77,6 +78,7 @@ class LaunchController : public Task {
     void launchInstance();
     void decideAccount();
     LaunchDecision decideLaunchMode();
+    AuthSessionPtr createSession() const;
     bool askPlayDemo() const;
     QString askOfflineName(const QString& playerName, bool* ok = nullptr);
     bool reauthenticateAccount(const MinecraftAccountPtr& account, const QString& reason);

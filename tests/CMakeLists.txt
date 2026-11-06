@@ -3,6 +3,7 @@ include(ECMMarkAsTest)
 include(ECMMarkNonGuiExecutable)
 
 set(TEST_SOURCES
+    MetadataCache_test.cpp
     OfflineAccount_test.cpp
     FileSystem_test.cpp
     GZip_test.cpp

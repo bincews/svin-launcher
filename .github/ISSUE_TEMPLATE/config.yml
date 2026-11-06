@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Prism Launcher Discord Server
-    url: https://prismlauncher.org/discord
-    about: Please ask for support here before opening an issue.
+  - name: Prism Launcher documentation
+    url: https://prismlauncher.org/wiki/
+    about: General upstream documentation. Report Svin Launcher-specific problems in this repository.

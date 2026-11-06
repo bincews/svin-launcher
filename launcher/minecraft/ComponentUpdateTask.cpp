@@ -132,12 +132,9 @@ static LoadResult loadComponent(ComponentPtr component, Task::Ptr& loadTask, Net
             result = LoadResult::LoadedLocal;
         } else {
             loadTask = APPLICATION->metadataIndex()->loadVersion(component->m_uid, component->m_version, netmode);
-            if (netmode == Net::Mode::Online)
-                result = LoadResult::RequiresRemote;
-            else if (metaVersion->isLoaded())
-                result = LoadResult::LoadedLocal;
-            else
-                result = LoadResult::Failed;
+            // loadTask() creates an unstarted task, even when loading from disk.
+            // Wait for its completion in both network modes before using the metadata.
+            result = LoadResult::RequiresRemote;
         }
     }
     return result;
@@ -246,7 +243,9 @@ void ComponentUpdateTask::loadComponents()
     }
 
     setDetails(tr("Downloading metadata for %1 components").arg(taskIndex));
-    for (const auto& status : d->remoteLoadStatusList) {
+    // Cached tasks can finish synchronously and clear remoteLoadStatusList.
+    const auto loadStatuses = d->remoteLoadStatusList;
+    for (const auto& status : loadStatuses) {
         status.task->start();
     }
 }
@@ -800,7 +799,7 @@ void ComponentUpdateTask::checkIfAllFinished()
         // nothing bad happened... clear the temp load status and proceed with looking at dependencies
         d->remoteLoadStatusList.clear();
         performUpdateActions();
-        resolveDependencies(d->mode == Mode::Launch);
+        resolveDependencies(d->mode == Mode::Launch || d->netmode == Net::Mode::Offline);
     } else {
         // remote load failed... report error and bail
         QStringList allErrorsList;

@@ -13,6 +13,8 @@ struct AuthSession {
 
     QString serializeUserProperties();
 
+    bool canDownloadGameFiles() const { return launchMode != LaunchMode::Offline || allowOnlineDownloads; }
+
     // combined session ID
     QString session;
     // volatile auth token
@@ -25,6 +27,8 @@ struct AuthSession {
     QString user_type;
     // the actual launch mode for this session
     LaunchMode launchMode;
+    // A local profile can download game files without Microsoft authentication.
+    bool allowOnlineDownloads = false;
 };
 
 using AuthSessionPtr = std::shared_ptr<AuthSession>;

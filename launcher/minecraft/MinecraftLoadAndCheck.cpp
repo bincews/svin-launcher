@@ -24,13 +24,31 @@ void MinecraftLoadAndCheck::executeTask()
     m_task = components->getCurrentTask();
 
     if (!m_task) {
-        emitSucceeded();
+        checkLaunchProfile();
         return;
     }
-    connect(m_task.get(), &Task::succeeded, this, &MinecraftLoadAndCheck::emitSucceeded);
+    connect(m_task.get(), &Task::succeeded, this, &MinecraftLoadAndCheck::checkLaunchProfile);
     connect(m_task.get(), &Task::failed, this, &MinecraftLoadAndCheck::emitFailed);
     connect(m_task.get(), &Task::aborted, this, &MinecraftLoadAndCheck::emitAborted);
     propagateFromOther(m_task.get());
+}
+
+void MinecraftLoadAndCheck::checkLaunchProfile()
+{
+    const auto profile = m_inst->getPackProfile()->getProfile();
+    if (const auto result = validateLaunchProfile(*profile); !result) {
+        emitFailed(result.error());
+        return;
+    }
+    emitSucceeded();
+}
+
+Result<> MinecraftLoadAndCheck::validateLaunchProfile(const LaunchProfile& profile)
+{
+    if (profile.getProblemSeverity() == ProblemSeverity::Error || profile.getMainClass().isEmpty() || !profile.getMainJar()) {
+        return std::unexpected(tr("Minecraft components are incomplete or contain errors. Reload the version components before launching."));
+    }
+    return {};
 }
 
 bool MinecraftLoadAndCheck::canAbort() const

@@ -16,12 +16,15 @@
 #pragma once
 
 #include "net/Mode.h"
+#include "Result.h"
 #include "tasks/Task.h"
 
 class MinecraftInstance;
+class LaunchProfile;
 
 class MinecraftLoadAndCheck : public Task {
     Q_OBJECT
+    friend class MetadataCacheTest;
    public:
     explicit MinecraftLoadAndCheck(MinecraftInstance* inst, Net::Mode netmode);
     virtual ~MinecraftLoadAndCheck() = default;
@@ -32,6 +35,8 @@ class MinecraftLoadAndCheck : public Task {
     bool abort() override;
 
    private:
+    static Result<> validateLaunchProfile(const LaunchProfile& profile);
+    void checkLaunchProfile();
     MinecraftInstance* m_inst = nullptr;
     Task::Ptr m_task;
     Net::Mode m_netmode;

@@ -62,3 +62,16 @@ flatbuild
 
 # Snap
 *.snap
+
+# Local launcher data (never part of the source repository)
+/accounts.json
+/prismlauncher.cfg
+/instances/
+/assets/
+/libraries/com/
+/meta/
+/java/
+/logs/
+/screenshots/
+/crash-reports/
+/backup-before-*/

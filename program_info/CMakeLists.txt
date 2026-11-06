@@ -9,10 +9,10 @@ if(UNIX)
 endif()
 
 set(Launcher_CommonName "PrismLauncher")
-set(Launcher_DisplayName "Prism Local (unofficial)")
+set(Launcher_DisplayName "Svin Launcher")
 set(Launcher_AppID "org.prismlauncher.PrismLauncher")
 set(Launcher_Domain "prismlauncher.org")
-set(Launcher_Git "https://github.com/PrismLauncher/PrismLauncher")
+set(Launcher_Git "https://github.com/bincews/svin-launcher")
 
 set(Launcher_Name "${Launcher_CommonName}" PARENT_SCOPE)
 set(Launcher_DisplayName "${Launcher_DisplayName}" PARENT_SCOPE)

@@ -267,6 +267,15 @@ QString LaunchController::askOfflineName(const QString& playerName, bool* ok)
     return usedname;
 }
 
+AuthSessionPtr LaunchController::createSession() const
+{
+    auto session = std::make_shared<AuthSession>();
+    session->launchMode = m_actualLaunchMode;
+    session->allowOnlineDownloads = m_accountToUse->accountType() == AccountType::Offline && m_wantedLaunchMode == LaunchMode::Normal;
+    m_accountToUse->fillSession(session);
+    return session;
+}
+
 void LaunchController::login()
 {
     decideAccount();
@@ -296,9 +305,7 @@ void LaunchController::login()
         return;
     }
 
-    m_session = std::make_shared<AuthSession>();
-    m_session->launchMode = m_actualLaunchMode;
-    m_accountToUse->fillSession(m_session);
+    m_session = createSession();
 
     if (m_accountToUse->accountType() != AccountType::Offline) {
         if (m_actualLaunchMode == LaunchMode::Normal && !m_accountToUse->hasProfile()) {
