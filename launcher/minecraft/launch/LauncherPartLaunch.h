@@ -41,7 +41,8 @@ class LauncherPartLaunch : public LaunchStep {
     void on_state(LoggedProcess::State state);
 
    private:
-    void startGame(QStringList classPath, bool elySkins);
+    enum class SkinMode { Disabled, Authlib, Legacy };
+    void startGame(QStringList classPath, SkinMode skins);
 
     LoggedProcess m_process;
     Net::Request::Ptr m_elyDownload;

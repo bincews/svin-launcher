@@ -44,6 +44,14 @@ import java.net.URLConnection;
 import java.net.URLStreamHandler;
 
 final class Handler extends URLStreamHandler {
+    private final boolean elySkins;
+    private final boolean onlineFixes;
+
+    Handler(boolean elySkins, boolean onlineFixes) {
+        this.elySkins = elySkins;
+        this.onlineFixes = onlineFixes;
+    }
+
     @Override
     protected URLConnection openConnection(URL address) throws IOException {
         return openConnection(address, null);
@@ -54,13 +62,15 @@ final class Handler extends URLStreamHandler {
         URLConnection result;
 
         // try various fixes...
-        result = SkinFix.openConnection(address, proxy);
+        result = SkinFix.openConnection(address, proxy, elySkins, onlineFixes);
         if (result != null)
             return result;
 
-        result = OnlineModeFix.openConnection(address, proxy);
-        if (result != null)
-            return result;
+        if (onlineFixes) {
+            result = OnlineModeFix.openConnection(address, proxy);
+            if (result != null)
+                return result;
+        }
 
         // ...then give up and make the request directly
         return UrlUtils.openConnection(address, proxy);

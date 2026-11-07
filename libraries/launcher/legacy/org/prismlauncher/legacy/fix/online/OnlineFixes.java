@@ -53,8 +53,18 @@ import java.net.URLStreamHandlerFactory;
  * @see {@link UrlUtils}
  */
 public final class OnlineFixes implements URLStreamHandlerFactory {
+    private final boolean elySkins;
+    private final boolean onlineFixes;
+
+    private OnlineFixes(boolean elySkins, boolean onlineFixes) {
+        this.elySkins = elySkins;
+        this.onlineFixes = onlineFixes;
+    }
+
     public static void apply(Parameters params) {
-        if (!"true".equals(params.getString("onlineFixes", null)))
+        boolean elySkins = "true".equals(params.getString("elySkins", null));
+        boolean onlineFixes = "true".equals(params.getString("onlineFixes", null));
+        if (!elySkins && !onlineFixes)
             return;
 
         if (!UrlUtils.isSupported() || !Base64.isSupported()) {
@@ -64,7 +74,7 @@ public final class OnlineFixes implements URLStreamHandlerFactory {
         }
 
         try {
-            URL.setURLStreamHandlerFactory(new OnlineFixes());
+            URL.setURLStreamHandlerFactory(new OnlineFixes(elySkins, onlineFixes));
         } catch (Error e) {
             Log.warning("Cannot apply skin fix: URLStreamHandlerFactory is already set");
             Log.warning("Turning off online fixes in the settings will silence the warnings");
@@ -74,7 +84,7 @@ public final class OnlineFixes implements URLStreamHandlerFactory {
     @Override
     public URLStreamHandler createURLStreamHandler(String protocol) {
         if ("http".equals(protocol))
-            return new Handler();
+            return new Handler(elySkins, onlineFixes);
 
         return null;
     }

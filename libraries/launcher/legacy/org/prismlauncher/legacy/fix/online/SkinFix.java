@@ -52,6 +52,7 @@
 
 package org.prismlauncher.legacy.fix.online;
 
+import org.prismlauncher.legacy.utils.api.ElyApi;
 import org.prismlauncher.legacy.utils.api.MojangApi;
 import org.prismlauncher.legacy.utils.api.Texture;
 import org.prismlauncher.legacy.utils.url.ByteArrayUrlConnection;
@@ -70,13 +71,13 @@ import java.net.URLConnection;
 import javax.imageio.ImageIO;
 
 final class SkinFix {
-    static URLConnection openConnection(URL address, Proxy proxy) throws IOException {
+    static URLConnection openConnection(URL address, Proxy proxy, boolean elySkins, boolean onlineFixes) throws IOException {
         String skinOwner = findSkinOwner(address);
         if (skinOwner != null)
             // we need to correct the skin
-            return getSkinConnection(skinOwner, proxy);
+            return getSkinConnection(skinOwner, proxy, elySkins);
 
-        String capeOwner = findCapeOwner(address);
+        String capeOwner = onlineFixes ? findCapeOwner(address) : null;
         if (capeOwner != null) {
             // since we do not need to process the image, open a direct connection bypassing
             // Handler
@@ -90,17 +91,32 @@ final class SkinFix {
         return null;
     }
 
-    private static URLConnection getSkinConnection(String owner, Proxy proxy) throws IOException {
-        Texture texture = MojangApi.getTexture(MojangApi.getUuid(owner), "SKIN");
+    private static URLConnection getSkinConnection(String owner, Proxy proxy, boolean elySkins) throws IOException {
+        Texture texture = null;
+        if (elySkins) {
+            try {
+                texture = ElyApi.getSkin(owner, proxy);
+            } catch (IOException e) {
+                // Continue with Mojang's skin service when Ely.by is unavailable.
+            }
+        }
+        if (texture == null)
+            texture = MojangApi.getTexture(MojangApi.getUuid(owner), "SKIN");
         if (texture == null)
             return null;
 
         URLConnection connection = UrlUtils.openConnection(texture.getUrl(), proxy);
+        if (elySkins) {
+            connection.setConnectTimeout(6000);
+            connection.setReadTimeout(6000);
+        }
         try (InputStream in = connection.getInputStream()) {
             // thank you ahnewark!
             // this is heavily based on
             // https://github.com/ahnewark/MineOnline/blob/4f4f86f9d051e0a6fd7ff0b95b2a05f7437683d7/src/main/java/gg/codie/mineonline/gui/textures/TextureHelper.java#L17
             BufferedImage image = ImageIO.read(in);
+            if (image == null || image.getWidth() != 64 || (image.getHeight() != 32 && image.getHeight() != 64))
+                return null;
             Graphics2D graphics = image.createGraphics();
             graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
 

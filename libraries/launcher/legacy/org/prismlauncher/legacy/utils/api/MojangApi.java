@@ -41,6 +41,7 @@ import org.prismlauncher.legacy.utils.json.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Map;
 
 /**
@@ -56,8 +57,10 @@ public final class MojangApi {
     }
 
     public static Texture getTexture(String player, String id) throws IOException {
-        Map<String, Object> map = getTextures(player);
+        return getTexture(getTextures(player), id);
+    }
 
+    static Texture getTexture(Map<String, Object> map, String id) throws IOException {
         if (map != null) {
             map = (Map<String, Object>) map.get(id);
             if (map == null)
@@ -79,10 +82,18 @@ public final class MojangApi {
     }
 
     public static Map<String, Object> getTextures(String player) throws IOException {
-        try (InputStream profileIn = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + player).openStream()) {
+        return getTextures(new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + player).openConnection());
+    }
+
+    static Map<String, Object> getTextures(URLConnection connection) throws IOException {
+        try (InputStream profileIn = connection.getInputStream()) {
             Map<String, Object> profile = (Map<String, Object>) JsonParser.parse(profileIn);
 
-            for (Map<String, Object> property : (Iterable<Map<String, Object>>) profile.get("properties")) {
+            Object properties = profile.get("properties");
+            if (!(properties instanceof Iterable))
+                return null;
+
+            for (Map<String, Object> property : (Iterable<Map<String, Object>>) properties) {
                 if (property.get("name").equals("textures")) {
                     Map<String, Object> result =
                             (Map<String, Object>) JsonParser.parse(new String(Base64.decode((String) property.get("value"))));

@@ -35,6 +35,8 @@
 
 #include "LauncherPartLaunch.h"
 
+#include "ElyAuthlibPatches.h"
+
 #include <QCryptographicHash>
 #include <QDir>
 #include <QRegularExpression>
@@ -50,20 +52,6 @@
 #if defined(Q_OS_LINUX) && defined(ENABLE_GAMEMODE)
 #include "gamemode_client.h"
 #endif
-
-namespace {
-struct ElyAuthlib {
-    const char* originalVersion;
-    const char* patchedVersion;
-    const char* sha256;
-};
-
-// Match the exact Authlib ABI supplied by Minecraft. These are PineconeMC's Ely.by builds.
-constexpr ElyAuthlib elyAuthlibs[] = {
-    { "7.0.61", "7.0.61-ely.1", "5e6640c232d1f53acb21ca3dd747cef76bef0212aeee3aa1125ce4d0ffaf1b3c" },
-    { "10.0.77", "10.0.77-ely.2", "846830e96ec5d1dd797ba8c7ae4bc8862e240af3a360c33d6a2ffbe72462eb74" },
-};
-}
 
 LauncherPartLaunch::LauncherPartLaunch(LaunchTask* parent)
     : LaunchStep(parent)
@@ -90,7 +78,11 @@ void LauncherPartLaunch::executeTask()
 {
     auto classPath = m_parent->instance()->getClassPath();
     if (!m_session || m_session->user_type != "offline" || !APPLICATION->settings()->get("ElyByGameSkins").toBool()) {
-        startGame(std::move(classPath), false);
+        startGame(std::move(classPath), SkinMode::Disabled);
+        return;
+    }
+    if (m_parent->instance()->traits().contains("legacyServices")) {
+        startGame(std::move(classPath), SkinMode::Legacy);
         return;
     }
 
@@ -108,7 +100,7 @@ void LauncherPartLaunch::executeTask()
         const auto sha256 = QByteArray::fromHex(QByteArray(patch.sha256));
         if (const auto cached = FS::read(path); cached && QCryptographicHash::hash(*cached, QCryptographicHash::Sha256) == sha256) {
             classPath[index] = path;
-            startGame(std::move(classPath), true);
+            startGame(std::move(classPath), SkinMode::Authlib);
             return;
         }
         if (!m_session->canDownloadGameFiles()) {
@@ -122,20 +114,20 @@ void LauncherPartLaunch::executeTask()
         m_elyDownload->addValidator(new Net::ChecksumValidator(QCryptographicHash::Sha256, sha256));
         connect(m_elyDownload.get(), &Task::succeeded, this, [this, classPath, index, path]() mutable {
             classPath[index] = path;
-            startGame(std::move(classPath), true);
+            startGame(std::move(classPath), SkinMode::Authlib);
         });
         connect(m_elyDownload.get(), &Task::failed, this, [this, classPath](const QString& error) mutable {
             emit logLine(tr("Could not load the Ely.by skin library: %1").arg(error), MessageLevel::Warning);
-            startGame(std::move(classPath), false);
+            startGame(std::move(classPath), SkinMode::Disabled);
         });
         connect(m_elyDownload.get(), &Task::aborted, this, &LauncherPartLaunch::emitAborted);
         m_elyDownload->start();
         return;
     }
-    startGame(std::move(classPath), false);
+    startGame(std::move(classPath), SkinMode::Disabled);
 }
 
-void LauncherPartLaunch::startGame(QStringList classPath, bool elySkins)
+void LauncherPartLaunch::startGame(QStringList classPath, SkinMode skins)
 {
     QString jarPath = APPLICATION->getJarPath("NewLaunch.jar");
     if (jarPath.isEmpty()) {
@@ -148,7 +140,7 @@ void LauncherPartLaunch::startGame(QStringList classPath, bool elySkins)
     auto* instance = m_parent->instance();
 
     QString legacyJarPath;
-    if (instance->getLauncher() == "legacy" || instance->shouldApplyOnlineFixes()) {
+    if (instance->getLauncher() == "legacy" || instance->shouldApplyOnlineFixes() || skins == SkinMode::Legacy) {
         legacyJarPath = APPLICATION->getJarPath("NewLaunchLegacy.jar");
         if (legacyJarPath.isEmpty()) {
             const char* reason = QT_TR_NOOP("Legacy launcher library could not be found. Please check your installation.");
@@ -160,11 +152,16 @@ void LauncherPartLaunch::startGame(QStringList classPath, bool elySkins)
 
     m_launchScript = instance->createLaunchScript(m_session, m_targetToJoin);
     QStringList args = instance->javaArguments();
-    if (elySkins) {
+    if (skins == SkinMode::Authlib) {
         args << "-Dely.authlib.fetchMissingSkinsByUsername=true"
              << "-Dely.authlib.offlineProfileLookupUrl=https://skinsystem.ely.by/profile/";
-        emit logLine(tr("Ely.by skins enabled for this launch."), MessageLevel::Launcher);
+    } else if (skins == SkinMode::Legacy) {
+        m_launchScript += "elySkins true\n";
+        if (instance->getJavaVersion().isModular() && !instance->shouldApplyOnlineFixes())
+            args << "--add-opens" << "java.base/java.net=ALL-UNNAMED";
     }
+    if (skins != SkinMode::Disabled)
+        emit logLine(tr("Ely.by skins enabled for this launch."), MessageLevel::Launcher);
     QString allArgs = args.join(" ");
     emit logLine("Java arguments:\n  " + m_parent->censorPrivateInfo(allArgs) + "\n", MessageLevel::Launcher);
 
