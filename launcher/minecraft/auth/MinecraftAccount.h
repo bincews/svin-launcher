@@ -136,6 +136,7 @@ class MinecraftAccount : public QObject, public Usable {
     }
 
     QPixmap getFace(int width = 64, int height = 64) const;
+    bool setOfflineSkin(const QByteArray& png);
 
     //! Returns the current state of the account
     AccountState accountState() const;

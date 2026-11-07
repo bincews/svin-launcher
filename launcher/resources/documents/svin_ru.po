@@ -1,0 +1,80 @@
+msgctxt "ThemeWizardPage"
+msgid "Appearance"
+msgstr "Внешний вид"
+
+msgctxt "ThemeWizardPage"
+msgid "Select theme and icons to use"
+msgstr "Выбери тему и набор значков"
+
+msgctxt "QObject"
+msgid "Dark"
+msgstr "Тёмная"
+
+msgctxt "QObject"
+msgid "Bright"
+msgstr "Светлая"
+
+msgctxt "QObject"
+msgid "%1min %2s"
+msgstr "%1 мин %2 с"
+
+msgctxt "QObject"
+msgid "%1h %2min"
+msgstr "%1 ч %2 мин"
+
+msgctxt "QObject"
+msgid "%1d %2h %3min"
+msgstr "%1 д %2 ч %3 мин"
+
+msgctxt "MainWindow"
+msgid "Total playtime: %1"
+msgstr "Всего в игре: %1"
+
+msgctxt "MainWindow"
+msgid "Launcher help"
+msgstr "Справка по Svin"
+
+msgctxt "MainWindow"
+msgid "Check for Svin updates in browser"
+msgstr "Проверить обновления Svin в браузере"
+
+msgctxt "AccountListPage"
+msgid "Add a local profile to play with a nickname, or sign in with Microsoft."
+msgstr "Добавь локальный профиль или войди в Microsoft."
+
+msgctxt "AccountListPage"
+msgid "What name would you like to use in the game?"
+msgstr "Какой ник использовать в игре?"
+
+msgctxt "AccountListPage"
+msgid "Load Ely.by skin"
+msgstr "Загрузить скин Ely.by"
+
+msgctxt "AccountListPage"
+msgid "Download the skin for this nickname and use it as the account avatar in Svin"
+msgstr "Загрузить скин по нику и поставить его на аватар профиля в Svin"
+
+msgctxt "AccountListPage"
+msgid "Ely.by skin"
+msgstr "Скин Ely.by"
+
+msgctxt "AccountListPage"
+msgid "Ely.by needs a nickname with up to 16 Latin letters, digits or underscores."
+msgstr "Для Ely.by нужен ник до 16 знаков из латинских букв, цифр и подчёркиваний."
+
+msgctxt "AccountListPage"
+msgid "No skin was found for %1."
+msgstr "Для %1 скин не найден."
+
+msgctxt "AccountListPage"
+msgid "Could not load the skin from Ely.by."
+msgstr "Не удалось загрузить скин с Ely.by."
+
+msgctxt "ModFolderPage"
+msgid "Ely.by skins in Minecraft"
+msgstr "Скины Ely.by в Minecraft"
+
+msgctxt "ModFolderPage"
+msgid "This instance needs a mod loader supported by Modrinth."
+msgstr "Для этой сборки нужен загрузчик модов, поддерживаемый Modrinth."
+

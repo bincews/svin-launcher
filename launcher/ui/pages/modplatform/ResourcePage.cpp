@@ -196,6 +196,12 @@ void ResourcePage::setSearchTerm(const QString& term)
     m_ui->searchEdit->setText(term);
 }
 
+void ResourcePage::findProject(const QString& projectId)
+{
+    setSearchTerm("#" + projectId);
+    triggerSearch();
+}
+
 void ResourcePage::addSortings()
 {
     Q_ASSERT(m_model);

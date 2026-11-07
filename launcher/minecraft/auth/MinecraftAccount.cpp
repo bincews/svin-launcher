@@ -49,6 +49,8 @@
 #include <QDebug>
 
 #include <QPainter>
+#include <QBuffer>
+#include <QImageReader>
 
 #include "minecraft/auth/AccountData.h"
 #include "minecraft/auth/AuthFlow.h"
@@ -97,6 +99,24 @@ QJsonObject MinecraftAccount::saveToJson() const
 AccountState MinecraftAccount::accountState() const
 {
     return data.accountState;
+}
+
+bool MinecraftAccount::setOfflineSkin(const QByteArray& png)
+{
+    if (data.type != AccountType::Offline || png.isEmpty() || png.size() > 128 * 1024)
+        return false;
+
+    QBuffer buffer;
+    buffer.setData(png);
+    buffer.open(QIODevice::ReadOnly);
+    QImageReader reader(&buffer, "png");
+    const QSize size = reader.size();
+    if ((size != QSize(64, 64) && size != QSize(64, 32)) || reader.read().isNull())
+        return false;
+
+    data.minecraftProfile.skin.data = png;
+    emit changed();
+    return true;
 }
 
 QPixmap MinecraftAccount::getFace(int width, int height) const

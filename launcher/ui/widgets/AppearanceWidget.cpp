@@ -135,6 +135,15 @@ void AppearanceWidget::loadSettings()
 void AppearanceWidget::retranslateUi()
 {
     m_ui->retranslateUi(this);
+
+    const auto themes = APPLICATION->themeManager()->getValidApplicationThemes();
+    for (ITheme* theme : themes) {
+        const int index = m_ui->widgetStyleComboBox->findData(theme->id());
+        if (index >= 0) {
+            m_ui->widgetStyleComboBox->setItemText(index, theme->name());
+            m_ui->widgetStyleComboBox->setItemData(index, theme->tooltip(), Qt::ToolTipRole);
+        }
+    }
 }
 
 void AppearanceWidget::applyIconTheme(int index)

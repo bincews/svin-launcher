@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include <QTemporaryDir>
+#include <QBuffer>
+#include <QImage>
 #include <QTest>
 
 #include "LaunchController.h"
@@ -122,6 +124,25 @@ class OfflineAccountTest : public QObject {
         QCOMPARE(session->uuid, offline->profileId());
         QCOMPARE(session->access_token, QString("0"));
         QCOMPARE(session->launchMode, LaunchMode::Offline);
+    }
+
+    void offlineSkinSurvivesRestart()
+    {
+        const auto offline = MinecraftAccount::createOffline("LocalPlayer");
+        QImage image(64, 64, QImage::Format_ARGB32);
+        image.fill(Qt::blue);
+        QByteArray png;
+        QBuffer buffer(&png);
+        QVERIFY(buffer.open(QIODevice::WriteOnly));
+        QVERIFY(image.save(&buffer, "PNG"));
+        QVERIFY(offline->setOfflineSkin(png));
+        QVERIFY(!offline->setOfflineSkin("broken skin"));
+        QVERIFY(!MinecraftAccount::createBlankMSA()->setOfflineSkin(png));
+
+        const auto restored = MinecraftAccount::loadFromJsonV3(offline->saveToJson());
+        QVERIFY(restored);
+        QCOMPARE(restored->accountData()->minecraftProfile.skin.data, png);
+        QCOMPARE(restored->profileId(), offline->profileId());
     }
 };
 

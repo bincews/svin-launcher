@@ -76,6 +76,7 @@ class ResourcePage : public QWidget, public BasePage {
     auto getSearchTerm() const -> QString;
     /** Programatically set the term in the search bar. */
     void setSearchTerm(const QString&);
+    void findProject(const QString& projectId);
 
     bool setCurrentPack(ModPlatform::IndexedPack::Ptr);
     auto getCurrentPack() const -> ModPlatform::IndexedPack::Ptr;

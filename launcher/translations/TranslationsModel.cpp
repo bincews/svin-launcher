@@ -164,6 +164,7 @@ struct TranslationsModel::Private {
     QString m_selectedLanguage = g_defaultLangCode;
     std::unique_ptr<QTranslator> m_qtTranslator;
     std::unique_ptr<QTranslator> m_appTranslator;
+    std::unique_ptr<POTranslator> m_svinTranslator;
 
     Net::Request* m_indexTask = nullptr;
     QString m_downloadingTranslation;
@@ -455,6 +456,10 @@ bool TranslationsModel::selectLanguage(QString key) const
     }
 
     // uninstall existing translators if there are any
+    if (d->m_svinTranslator) {
+        QCoreApplication::removeTranslator(d->m_svinTranslator.get());
+        d->m_svinTranslator.reset();
+    }
     if (d->m_appTranslator) {
         QCoreApplication::removeTranslator(d->m_appTranslator.get());
         d->m_appTranslator.reset();
@@ -523,6 +528,10 @@ bool TranslationsModel::selectLanguage(QString key) const
         }
     } else {
         d->m_appTranslator.reset();
+    }
+    if (QLocale(langCode).language() == QLocale::Russian) {
+        d->m_svinTranslator = std::make_unique<POTranslator>(":/documents/svin_ru.po");
+        successful = QCoreApplication::installTranslator(d->m_svinTranslator.get()) || successful;
     }
     d->m_selectedLanguage = langCode;
     return successful;

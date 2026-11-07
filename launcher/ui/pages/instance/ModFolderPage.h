@@ -59,6 +59,7 @@ class ModFolderPage : public ExternalResourcesPage {
     virtual QString helpPage() const override { return "Loader-mods"; }
 
     virtual bool shouldDisplay() const override;
+    void retranslate() override;
 
    public slots:
     void updateFrame(const QModelIndex& current, const QModelIndex& previous) override;
@@ -76,6 +77,10 @@ class ModFolderPage : public ExternalResourcesPage {
    protected:
     ModFolderModel* m_model;
     QPointer<ResourceDownload::ResourceDownloadDialog> m_downloadDialog;
+
+   private:
+    void openModDownload(const QString& modrinthProject = {});
+    QAction* m_elySkinAction = nullptr;
 };
 
 class CoreModFolderPage : public ModFolderPage {

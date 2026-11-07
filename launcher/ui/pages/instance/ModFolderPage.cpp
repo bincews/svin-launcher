@@ -59,6 +59,8 @@
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/ResourceDownloadDialog.h"
 #include "ui/dialogs/ResourceUpdateDialog.h"
+#include "ui/pages/modplatform/ResourcePage.h"
+#include "ui/pages/modplatform/modrinth/ModrinthResourcePages.h"
 
 #include "minecraft/PackProfile.h"
 #include "minecraft/VersionFilterData.h"
@@ -78,6 +80,10 @@ ModFolderPage::ModFolderPage(MinecraftInstance* inst, ModFolderModel* model, QWi
     m_ui->actionsToolbar->insertActionBefore(m_ui->actionAddItem, m_ui->actionDownloadItem);
 
     connect(m_ui->actionDownloadItem, &QAction::triggered, this, &ModFolderPage::downloadMods);
+    m_elySkinAction = new QAction(tr("Ely.by skins in Minecraft"), this);
+    m_elySkinAction->setIcon(QIcon::fromTheme("skin"));
+    m_ui->actionsToolbar->insertActionBefore(m_ui->actionAddItem, m_elySkinAction);
+    connect(m_elySkinAction, &QAction::triggered, this, [this] { openModDownload("idMHQ4n2"); });
 
     m_ui->actionUpdateItem->setToolTip(tr("Try to check or update all selected mods (all mods if none are selected)"));
     connect(m_ui->actionUpdateItem, &QAction::triggered, this, [this] { updateMods(); });
@@ -185,12 +191,34 @@ void ModFolderPage::removeItems(const QItemSelection& selection)
 
 void ModFolderPage::downloadMods()
 {
+    openModDownload();
+}
+
+void ModFolderPage::retranslate()
+{
+    ExternalResourcesPage::retranslate();
+    m_ui->actionDownloadItem->setText(tr("Download Mods"));
+    m_ui->actionDownloadItem->setToolTip(tr("Download mods from online mod platforms"));
+    m_elySkinAction->setText(tr("Ely.by skins in Minecraft"));
+}
+
+void ModFolderPage::openModDownload(const QString& modrinthProject)
+{
     auto* profile = m_instance->getPackProfile();
     if (!profile->getModLoaders().has_value() && handleNoModLoader()) {
         return;
     }
 
-    m_downloadDialog = ResourceDownload::ResourceDownloadDialog::createMod(this, m_model, m_instance);
+    m_downloadDialog = ResourceDownload::ResourceDownloadDialog::createMod(this, m_model, m_instance, !modrinthProject.isEmpty());
+    if (!modrinthProject.isEmpty()) {
+        const auto modrinthId = ResourceDownload::Modrinth::id();
+        if (!m_downloadDialog->selectPage(modrinthId) || m_downloadDialog->selectedPage()->id() != modrinthId) {
+            m_downloadDialog->deleteLater();
+            QMessageBox::information(this, tr("Ely.by skins in Minecraft"), tr("This instance needs a mod loader supported by Modrinth."));
+            return;
+        }
+        m_downloadDialog->selectedPage()->findProject(modrinthProject);
+    }
     connect(this, &QObject::destroyed, m_downloadDialog, &QDialog::close);
     connect(m_downloadDialog, &QDialog::finished, this, &ModFolderPage::downloadDialogFinished);
 

@@ -220,6 +220,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         helpMenuButton->setPopupMode(QToolButton::InstantPopup);
         connect(ui->actionProjectRepository, &QAction::triggered, this,
                 [] { DesktopServices::openUrl(QUrl(BuildConfig.LAUNCHER_GIT)); });
+        connect(ui->actionSvinReleases, &QAction::triggered, this,
+                [] { DesktopServices::openUrl(QUrl(BuildConfig.LAUNCHER_GIT + "/releases/latest")); });
 
         auto accountMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionAccountsButton));
         accountMenuButton->setPopupMode(QToolButton::InstantPopup);
@@ -377,7 +379,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(APPLICATION, &Application::globalSettingsApplied, this, &MainWindow::globalSettingsClosed);
 
     m_statusLeft = new QLabel(tr("No instance selected"), this);
-    m_statusCenter = new QLabel(tr("Total playtime: 0s"), this);
+    m_statusCenter = new QLabel(this);
     statusBar()->addPermanentWidget(m_statusLeft, 1);
     statusBar()->addPermanentWidget(m_statusCenter, 0);
 
@@ -457,7 +459,7 @@ void MainWindow::retranslateUi()
     }
 
     ui->retranslateUi(this);
-    ui->actionOpenWiki->setText(tr("Help"));
+    ui->actionOpenWiki->setText(tr("Launcher help"));
     ui->actionOpenWiki->setToolTip(tr("Get help with %1 or Minecraft.").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
     ui->actionExportInstanceZip->setText(QStringLiteral("%1 (zip)").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
 
@@ -468,6 +470,7 @@ void MainWindow::retranslateUi()
     }
 
     m_changeIconButton->setToolTip(ui->actionChangeInstIcon->toolTip());
+    updateStatusCenter();
 
     // replace the %1 with the launcher display name in some actions
     if (helpMenuButton->toolTip().contains("%1"))
@@ -1789,11 +1792,8 @@ void MainWindow::updateStatusCenter()
 {
     m_statusCenter->setVisible(APPLICATION->settings()->get("ShowGlobalGameTime").toBool());
     int64_t timePlayed = APPLICATION->playtimeSettings()->get("TotalPlayTime").toLongLong();
-    if (timePlayed > 0) {
-        m_statusCenter->setText(
-            tr("Total playtime: %1")
-                .arg(Time::prettifyDuration(timePlayed, APPLICATION->settings()->get("ShowGameTimeWithoutDays").toBool())));
-    }
+    m_statusCenter->setText(tr("Total playtime: %1")
+                               .arg(Time::prettifyDuration(timePlayed, APPLICATION->settings()->get("ShowGameTimeWithoutDays").toBool())));
 }
 // "Instance actions" are actions that require an instance to be selected (i.e. "new instance" is not here)
 // Actions that also require other conditions (e.g. a running instance) won't be changed.

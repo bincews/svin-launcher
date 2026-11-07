@@ -222,7 +222,11 @@ void AccountList::setDefaultAccount(MinecraftAccountPtr newAccount)
 
 void AccountList::accountChanged()
 {
-    // the list changed. there is no doubt.
+    if (auto* account = qobject_cast<MinecraftAccount*>(sender())) {
+        const int row = findAccountByProfileId(account->profileId());
+        if (row >= 0)
+            emit dataChanged(index(row, 0), index(row, columnCount(QModelIndex()) - 1));
+    }
     onListChanged();
 }
 
