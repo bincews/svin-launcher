@@ -58,6 +58,7 @@ Config::Config()
     VERSION_MAJOR = @Launcher_VERSION_MAJOR@;
     VERSION_MINOR = @Launcher_VERSION_MINOR@;
     VERSION_PATCH = @Launcher_VERSION_PATCH@;
+    SVIN_RELEASE = @Launcher_SVIN_RELEASE@;
 
     BUILD_PLATFORM = "@Launcher_BUILD_PLATFORM@";
     BUILD_ARTIFACT = "@Launcher_BUILD_ARTIFACT@";
@@ -134,6 +135,9 @@ QString Config::versionString() const
 
 QString Config::printableVersionString() const
 {
+    if (SVIN_RELEASE > 0) {
+        return QStringLiteral("r%1").arg(SVIN_RELEASE);
+    }
     QString vstr = versionString();
 
     // If the build is not a main release, append the channel

@@ -35,8 +35,56 @@ msgid "Launcher help"
 msgstr "Справка по Svin"
 
 msgctxt "MainWindow"
-msgid "Check for Svin updates in browser"
-msgstr "Проверить обновления Svin в браузере"
+msgid "Check for launcher updates"
+msgstr "Проверить обновления Svin"
+
+msgctxt "MainWindow"
+msgid "Svin releases on GitHub"
+msgstr "Релизы Svin на GitHub"
+
+msgctxt "PrismExternalUpdater"
+msgid "Checking for updates..."
+msgstr "Проверяем обновления…"
+
+msgctxt "PrismExternalUpdater"
+msgid "Update Check Failed"
+msgstr "Не удалось проверить обновления"
+
+msgctxt "PrismExternalUpdater"
+msgid "Could not check for Svin Launcher updates."
+msgstr "Не удалось получить список релизов Svin."
+
+msgctxt "PrismExternalUpdater"
+msgid "No Update Available"
+msgstr "Обновлений нет"
+
+msgctxt "PrismExternalUpdater"
+msgid "You are running the latest version."
+msgstr "У тебя последняя версия Svin."
+
+msgctxt "PrismExternalUpdater"
+msgid "Close the running game before updating Svin Launcher."
+msgstr "Закрой Minecraft, чтобы обновить Svin."
+
+msgctxt "UpdateAvailableDialog"
+msgid "Update Available"
+msgstr "Доступно обновление"
+
+msgctxt "UpdateAvailableDialog"
+msgid "A new version of %1 is available!"
+msgstr "Доступна новая версия %1"
+
+msgctxt "UpdateAvailableDialog"
+msgid "Version %1 is now available - you have %2 . Would you like to download it now?"
+msgstr "Доступен %1. Сейчас у тебя %2."
+
+msgctxt "UpdateAvailableDialog"
+msgid "Install Update"
+msgstr "Обновить"
+
+msgctxt "UpdateAvailableDialog"
+msgid "Skip This Version"
+msgstr "Пропустить версию"
 
 msgctxt "AccountListPage"
 msgid "Add a local profile to play with a nickname, or sign in with Microsoft."

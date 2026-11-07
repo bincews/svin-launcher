@@ -68,6 +68,7 @@ class Config {
      * This is used by the updater to determine what channel the current version came from.
      */
     QString VERSION_CHANNEL;
+    int SVIN_RELEASE;
 
     bool UPDATER_ENABLED = false;
     bool JAVA_DOWNLOADER_ENABLED = false;

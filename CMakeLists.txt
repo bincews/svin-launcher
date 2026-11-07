@@ -187,6 +187,11 @@ set(Launcher_LEGACY_FMLLIBS_BASE_URL "https://files.prismlauncher.org/fmllibs/" 
 set(Launcher_VERSION_MAJOR 12)
 set(Launcher_VERSION_MINOR 0)
 set(Launcher_VERSION_PATCH 0)
+set(Launcher_SVIN_RELEASE "0" CACHE STRING "Svin release number, or 0 for development builds")
+string(LENGTH "${Launcher_SVIN_RELEASE}" Launcher_SVIN_RELEASE_LENGTH)
+if(NOT Launcher_SVIN_RELEASE MATCHES "^(0|[1-9][0-9]*)$" OR Launcher_SVIN_RELEASE_LENGTH GREATER 9)
+    message(FATAL_ERROR "Launcher_SVIN_RELEASE must be a non-negative integer")
+endif()
 
 set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}")
 set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.0")
@@ -385,6 +390,14 @@ include(ECMQtDeclareLoggingCategory)
 
 set(Launcher_APP_BINARY_NAME "svinlauncher" CACHE STRING "Name of the Launcher binary")
 add_subdirectory(program_info)
+
+if(Launcher_SVIN_RELEASE GREATER 0)
+    if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8 OR CMAKE_CXX_COMPILER_ARCHITECTURE_ID MATCHES "ARM")
+        message(FATAL_ERROR "Svin releases currently support Windows x64")
+    endif()
+    set(Launcher_UPDATER_GITHUB_REPO "${Launcher_Git}")
+    set(Launcher_BUILD_ARTIFACT "windows-x64")
+endif()
 
 ####################################### Install layout #######################################
 

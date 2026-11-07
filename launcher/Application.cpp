@@ -92,6 +92,7 @@
 #include <QCommandLineParser>
 #include <QDebug>
 #include <QDir>
+#include <QLockFile>
 #include <QFileInfo>
 #include <QFileOpenEvent>
 #include <QIcon>
@@ -383,6 +384,18 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         // on macOS, touch the root to force Finder to reload the .app metadata (and fix any icon change issues)
         FS::updateTimestamp(m_rootPath);
 #endif
+    }
+
+    if (BuildConfig.SVIN_RELEASE > 0) {
+        const auto lockPath = QDir(m_rootPath).filePath(".svin-update.lock");
+        if (QFileInfo::exists(lockPath)) {
+            QLockFile updateLock(lockPath);
+            updateLock.setStaleLockTime(0);
+            if (!updateLock.tryLock()) {
+                showFatalErrorMessage(tr("Svin Launcher is updating"), tr("Wait for the update to finish before opening Svin Launcher."));
+                return;
+            }
+        }
     }
 
     QString adjustedBy;

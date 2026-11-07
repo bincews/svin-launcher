@@ -28,6 +28,7 @@ set(TEST_SOURCES
     CatPack_test.cpp
     XmlLogs_test.cpp
     Commandline_test.cpp
+    SvinPortableUpdate_test.cpp
 )
 
 # NOTE(@getchoo): Very funny way of aliasing the Qt generated `main` test functions to respective filenames
@@ -40,6 +41,7 @@ endforeach()
 
 create_test_sourcelist(DRIVER_SOURCES LauncherTests.cpp ${TEST_SOURCES})
 add_executable(LauncherTests ${DRIVER_SOURCES})
+target_sources(LauncherTests PRIVATE ../launcher/updater/prismupdater/SvinPortableUpdate.cpp)
 target_link_libraries(LauncherTests PRIVATE Launcher_logic Qt${QT_VERSION_MAJOR}::Test)
 
 # Add back some stuff ECMAddTests would (https://api.kde.org/ecm/module/ECMAddTests.html)

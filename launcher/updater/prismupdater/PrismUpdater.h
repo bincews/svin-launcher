@@ -82,7 +82,8 @@ class PrismUpdaterApp : public QApplication {
     void backupAppDir();
     std::optional<QDir> unpackArchive(const QFileInfo& archive);
 
-    QFileInfo downloadAsset(const GitHubReleaseAsset& asset);
+    QFileInfo downloadAsset(const GitHubReleaseAsset& asset, const QString& directory);
+    void finishSvinUpdate(const QDir& target, const QString& parentPid, const QString& version);
     bool callAppImageUpdate();
 
     void moveAndFinishUpdate(const QDir& target);
@@ -107,12 +108,13 @@ class PrismUpdaterApp : public QApplication {
     QString m_prismExecutable;
     QUrl m_prismRepoUrl;
     Version m_userSelectedVersion;
-    bool m_checkOnly;
+    bool m_checkOnly = false;
     bool m_forceUpdate;
     bool m_printOnly;
     bool m_selectUI;
     bool m_allowDowngrade;
     bool m_allowPreRelease;
+    QString m_parentPid;
 
     QString m_updateLogPath;
 

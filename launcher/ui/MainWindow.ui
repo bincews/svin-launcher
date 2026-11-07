@@ -299,7 +299,7 @@
     <iconset theme="checkupdate"/>
    </property>
    <property name="text">
-    <string>&amp;Update...</string>
+    <string>Check for launcher updates</string>
    </property>
    <property name="toolTip">
     <string>Check for new updates for %1.</string>
@@ -730,7 +730,7 @@
   </action>
   <action name="actionSvinReleases">
    <property name="text">
-    <string>Check for Svin updates in browser</string>
+    <string>Svin releases on GitHub</string>
    </property>
   </action>
   <action name="actionOpenWiki">

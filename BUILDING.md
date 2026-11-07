@@ -23,12 +23,18 @@ cmake --install build --config Release
 cmake --install build --config Release --component portable
 ```
 
+Для релиза r3 добавь `-DLauncher_SVIN_RELEASE=3` к команде настройки CMake.
+Для следующих релизов укажи соответствующий номер. Архив
+`Svin-Launcher-Windows-x64-rN.zip` должен содержать папку
+`Svin-Launcher-Windows-x64` с файлами установки, включая `svinlauncher_updater.exe`.
+Прикрепи его к релизу с тегом `svin-rN`.
+
 Результат — `install/svinlauncher.exe` и зависимости рядом с ним.
 Для переносной сборки нужны DLL из
 `VC/Redist/MSVC/<версия>/x64/Microsoft.VC143.CRT` установленной Visual Studio.
 
 Из общего прогона исключён FileSystem: тесты символических ссылок требуют
-повышенных прав. Остальные 24 набора запускаются приведённой командой.
+повышенных прав.
 
 ## GitHub Actions
 

@@ -594,6 +594,8 @@ set(PRISMUPDATER_SOURCES
     updater/prismupdater/UpdaterDialogs.cpp
     updater/prismupdater/GitHubRelease.h
     updater/prismupdater/GitHubRelease.cpp
+    updater/prismupdater/SvinPortableUpdate.h
+    updater/prismupdater/SvinPortableUpdate.cpp
 
     Json.h
     Json.cpp

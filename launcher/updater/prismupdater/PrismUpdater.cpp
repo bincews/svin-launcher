@@ -38,22 +38,49 @@
 #include <QNetworkRequest>
 #include <QProcess>
 #include <QProgressDialog>
+#include <QLockFile>
+#include <QTemporaryDir>
 #include <memory>
+
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
 
 #include "DesktopServices.h"
 
 #include "updater/prismupdater/UpdaterDialogs.h"
+#include "updater/prismupdater/SvinPortableUpdate.h"
 
 #include "FileSystem.h"
 #include "Json.h"
 #include "StringUtils.h"
 
 #include "net/RawHeaderProxy.h"
+#include "net/ChecksumValidator.h"
 #include "net/Request.h"
 
 #include "MMCZip.h"
 
 namespace {
+
+bool waitForProcess(const QString& pidText)
+{
+#ifdef Q_OS_WIN
+    bool ok = false;
+    const auto pid = pidText.toUInt(&ok);
+    if (!ok || !pid || pid == GetCurrentProcessId())
+        return false;
+    const auto handle = OpenProcess(SYNCHRONIZE, FALSE, pid);
+    if (!handle)
+        return GetLastError() == ERROR_INVALID_PARAMETER;
+    const bool exited = WaitForSingleObject(handle, 15000) == WAIT_OBJECT_0;
+    CloseHandle(handle);
+    return exited;
+#else
+    Q_UNUSED(pidText)
+    return false;
+#endif
+}
 
 /** output to the log file */
 void appDebugOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
@@ -83,7 +110,7 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 
     // Command line parsing
     QCommandLineParser parser;
-    parser.setApplicationDescription(QObject::tr("An auto-updater for Prism Launcher"));
+    parser.setApplicationDescription(tr("Updater for %1").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
 
     parser.addOptions(
         { { { "d", "dir" }, tr("Use a custom path as application root (use '.' for current directory)."), tr("directory") },
@@ -98,6 +125,8 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
           { { "F", "force" }, tr("Force an update, even if one is not needed.") },
           { { "l", "list" }, tr("List available releases.") },
           { "debug", tr("Log debug to console.") },
+          { "svin-target", "Finish a staged Svin update.", "directory" },
+          { "svin-parent", "Wait for the previous Svin process.", "pid" },
           { { "S", "select-ui" }, tr("Select the version to install with a GUI.") },
           { { "D", "allow-downgrade" }, tr("Allow the updater to downgrade to previous versions.") } });
 
@@ -106,6 +135,8 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
     parser.process(arguments());
 
     logToConsole = parser.isSet("debug");
+    m_checkOnly = parser.isSet("check-only");
+    m_parentPid = parser.value("svin-parent");
 
     QString origCwdPath = QDir::currentPath();
     QString binPath = applicationDirPath();
@@ -299,6 +330,13 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 
     m_isFlatpak = DesktopServices::isFlatpak();
 
+    if (BuildConfig.SVIN_RELEASE > 0 && parser.isSet("svin-target")) {
+        const QDir target(parser.value("svin-target"));
+        const auto version = parser.value("install-version");
+        QMetaObject::invokeMethod(this, [this, target, version] { finishSvinUpdate(target, m_parentPid, version); }, Qt::QueuedConnection);
+        return;
+    }
+
     QString prismExecutable = FS::PathCombine(binPath, BuildConfig.LAUNCHER_APP_BINARY_NAME);
 #if defined Q_OS_WIN32
     prismExecutable.append(".exe");
@@ -311,13 +349,12 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
     m_prismExecutable = prismExecutable;
 
     auto prismUpdateUrl = parser.value("update-url");
-    if (prismUpdateUrl.isEmpty()) {
+    if (prismUpdateUrl.isEmpty() || BuildConfig.SVIN_RELEASE > 0) {
         prismUpdateUrl = BuildConfig.UPDATER_GITHUB_REPO;
     }
 
     m_prismRepoUrl = QUrl::fromUserInput(prismUpdateUrl);
 
-    m_checkOnly = parser.isSet("check-only");
     m_forceUpdate = parser.isSet("force");
     m_printOnly = parser.isSet("list");
     auto userVersion = parser.value("install-version");
@@ -350,7 +387,7 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
 
     auto markerFilePath = QDir(m_rootPath).absoluteFilePath(".prism_launcher_updater_unpack.marker");
     auto markerFile = QFileInfo(markerFilePath);
-    if (markerFile.exists()) {
+    if (BuildConfig.SVIN_RELEASE == 0 && markerFile.exists()) {
         auto res = FS::read(markerFilePath);
         if (!res) {
             qFatal("Could not read updater marker file: %s", res.error().toUtf8().constData());
@@ -417,7 +454,7 @@ void PrismUpdaterApp::run()
         return;
     }
 
-    if (!loadPrismVersionFromExe(m_prismExecutable)) {
+    if (BuildConfig.SVIN_RELEASE > 0 || !loadPrismVersionFromExe(m_prismExecutable)) {
         m_prismVersion = BuildConfig.printableVersionString();
         m_prismVersionMajor = BuildConfig.VERSION_MAJOR;
         m_prismVersionMinor = BuildConfig.VERSION_MINOR;
@@ -493,6 +530,10 @@ void PrismUpdaterApp::run()
             }
         }
 
+        if (BuildConfig.SVIN_RELEASE > 0 && (!needUpdate(updateRelease) || updateRelease.prerelease || updateRelease.draft)) {
+            fail("The selected release is not newer than this version of Svin");
+            return;
+        }
         performUpdate(updateRelease);
     }
 
@@ -673,6 +714,20 @@ QList<GitHubReleaseAsset> PrismUpdaterApp::validReleaseArtifacts(const GitHubRel
 {
     QList<GitHubReleaseAsset> valid;
 
+    if (BuildConfig.SVIN_RELEASE > 0) {
+        static const QRegularExpression sha256(R"(\Asha256:[a-fA-F0-9]{64}\z)");
+        const auto number = SvinPortableUpdate::releaseNumber(release.tag_name);
+        if (!number || !m_isPortable)
+            return valid;
+        const auto name = QStringLiteral("Svin-Launcher-Windows-x64-r%1.zip").arg(number);
+        const auto url = QStringLiteral("%1/releases/download/%2/%3").arg(BuildConfig.UPDATER_GITHUB_REPO, release.tag_name, name);
+        for (const auto& asset : release.assets) {
+            if (asset.name == name && asset.browser_download_url == url && asset.size > 0 && sha256.match(asset.digest).hasMatch())
+                valid.append(asset);
+        }
+        return valid;
+    }
+
     qDebug() << "Selecting best asset from" << release.tag_name << "for platform" << BuildConfig.BUILD_ARTIFACT
              << "portable:" << m_isPortable;
     if (BuildConfig.BUILD_ARTIFACT.isEmpty()) {
@@ -773,29 +828,92 @@ void PrismUpdaterApp::performUpdate(const GitHubRelease& release)
     }
 
     qDebug() << "will install" << selectedAsset;
-    auto file = downloadAsset(selectedAsset);
+    QTemporaryDir workspace(QDir::temp().filePath("svin-update-XXXXXX"));
+    const bool svin = BuildConfig.SVIN_RELEASE > 0;
+    if (svin && !workspace.isValid()) {
+        showFatalErrorMessage(tr("Update Failed"), tr("Could not create the temporary update folder."));
+        return;
+    }
+    QLockFile updateLock(QDir(m_rootPath).filePath(".svin-update.lock"));
+    updateLock.setStaleLockTime(0);
+    if (svin && (!updateLock.tryLock() || !waitForProcess(m_parentPid))) {
+        showFatalErrorMessage(tr("Update Failed"), tr("Close Svin Launcher before installing the update."));
+        return;
+    }
+    auto file = downloadAsset(selectedAsset, svin ? workspace.path() : QDir::tempPath());
 
     if (!file.exists()) {
         showFatalErrorMessage(tr("Failed to Download"), tr("Failed to download the selected asset."));
         return;
     }
 
-    performInstall(file);
+    if (!svin) {
+        performInstall(file);
+        return;
+    }
+
+    const QDir payload(QDir(workspace.path()).filePath("payload"));
+    const auto result = SvinPortableUpdate::unpack(file.absoluteFilePath(), payload);
+    if (!result) {
+        showFatalErrorMessage(tr("Update Failed"), result.error());
+        return;
+    }
+    QFile::remove(file.absoluteFilePath());
+
+    QProcess installer;
+    installer.setProgram(payload.filePath("svinlauncher_updater.exe"));
+    installer.setWorkingDirectory(payload.absolutePath());
+    installer.setArguments({ "--svin-target", m_rootPath, "--svin-parent", QString::number(applicationPid()),
+                             "--install-version", release.tag_name, "--dir", m_dataPath });
+    if (!installer.startDetached()) {
+        showFatalErrorMessage(tr("Update Failed"), installer.errorString());
+        return;
+    }
+    workspace.setAutoRemove(false);
 }
 
-QFileInfo PrismUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset)
+void PrismUpdaterApp::finishSvinUpdate(const QDir& target, const QString& parentPid, const QString& version)
 {
-    auto tempDir = QDir::tempPath();
+    if (SvinPortableUpdate::releaseNumber(version) != BuildConfig.SVIN_RELEASE || !waitForProcess(parentPid)) {
+        showFatalErrorMessage(tr("Update Failed"), tr("The downloaded version does not match the release, or the previous process is still running."));
+        return;
+    }
+
+    QLockFile updateLock(target.filePath(".svin-update.lock"));
+    updateLock.setStaleLockTime(0);
+    if (!updateLock.tryLock()) {
+        showFatalErrorMessage(tr("Update Failed"), tr("Another update is already running."));
+        return;
+    }
+    const auto result = SvinPortableUpdate::install(QDir(m_rootPath), target);
+    if (!result) {
+        showFatalErrorMessage(tr("Update Failed"), result.error());
+        return;
+    }
+    updateLock.unlock();
+    if (!QProcess::startDetached(target.filePath("svinlauncher.exe"), { "--dir", m_dataPath }, target.absolutePath())) {
+        showFatalErrorMessage(tr("Update Failed"), tr("The update was installed. Open Svin Launcher to continue."));
+        return;
+    }
+    exit(0);
+}
+
+QFileInfo PrismUpdaterApp::downloadAsset(const GitHubReleaseAsset& asset, const QString& directory)
+{
     auto fileUrl = QUrl(asset.browser_download_url);
-    auto outFilePath = FS::PathCombine(tempDir, fileUrl.fileName());
+    auto outFilePath = FS::PathCombine(directory, fileUrl.fileName());
 
     qDebug() << "downloading" << fileUrl << "to" << outFilePath;
     auto download = Net::Request::makeFile(fileUrl, outFilePath);
     download->setNetwork(m_network.get());
+    if (BuildConfig.SVIN_RELEASE > 0)
+        download->addValidator(new Net::ChecksumValidator(QCryptographicHash::Sha256, asset.digest.sliced(7)));
     auto progressDialog = ProgressDialog();
     progressDialog.adjustSize();
 
     progressDialog.execWithTask(download.get());
+    if (BuildConfig.SVIN_RELEASE > 0 && (!download->wasSuccessful() || QFileInfo(outFilePath).size() != asset.size))
+        return {};
 
     qDebug() << "download complete";
 
@@ -1274,6 +1392,7 @@ Result<int> PrismUpdaterApp::parseReleasePage(const QByteArray* response)
             TRY_INTO(asset.created_at, Json::requireString(assetObj, "created_at").and_then(toDate))
             TRY_INTO(asset.updated_at, Json::requireString(assetObj, "updated_at").and_then(toDate))
             TRY_INTO(asset.browser_download_url, Json::requireString(assetObj, "browser_download_url"))
+            asset.digest = assetObj["digest"].toString();
             release.assets.append(asset);
         }
         m_releases.append(release);
@@ -1289,9 +1408,11 @@ GitHubRelease PrismUpdaterApp::getLatestRelease()
         if (release.draft) {
             continue;
         }
-        if (release.prerelease && !m_allowPreRelease) {
+        if (release.prerelease && (!m_allowPreRelease || BuildConfig.SVIN_RELEASE > 0)) {
             continue;
         }
+        if (BuildConfig.SVIN_RELEASE > 0 && validReleaseArtifacts(release).isEmpty())
+            continue;
         if (!latest.isValid() || (release.version > latest.version)) {
             latest = release;
         }
@@ -1301,6 +1422,8 @@ GitHubRelease PrismUpdaterApp::getLatestRelease()
 
 bool PrismUpdaterApp::needUpdate(const GitHubRelease& release) const
 {
+    if (BuildConfig.SVIN_RELEASE > 0)
+        return SvinPortableUpdate::releaseNumber(release.tag_name) > BuildConfig.SVIN_RELEASE;
     auto currentVer = Version(QString("%1.%2.%3").arg(m_prismVersionMajor).arg(m_prismVersionMinor).arg(m_prismVersionPatch));
     return currentVer < release.version;
 }
