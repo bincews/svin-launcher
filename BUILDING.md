@@ -23,7 +23,7 @@ cmake --install build --config Release
 cmake --install build --config Release --component portable
 ```
 
-Для релиза r3 добавь `-DLauncher_SVIN_RELEASE=3` к команде настройки CMake.
+Для релиза r4 добавь `-DLauncher_SVIN_RELEASE=4` к команде настройки CMake.
 Для следующих релизов укажи соответствующий номер. Архив
 `Svin-Launcher-Windows-x64-rN.zip` должен содержать папку
 `Svin-Launcher-Windows-x64` с файлами установки, включая `svinlauncher_updater.exe`.

@@ -21,7 +21,8 @@
 #include "Application.h"
 #include "settings/SettingsObject.h"
 
-CatPainter::CatPainter(const QString& path, QObject* parent) : QObject(parent)
+CatPainter::CatPainter(const QString& path, QObject* parent)
+    : QObject(parent), m_centered(path.startsWith(QStringLiteral(":/backgrounds/kitteh")))
 {
     // Attempt to load as a movie
     m_movie = new QMovie(path, QByteArray(), this);
@@ -61,7 +62,11 @@ void CatPainter::paint(QPainter* painter, const QRect& viewport)
     }
     auto pixmap = frame.scaled(widWidth, widHeight, aspectMode, Qt::SmoothTransformation);
     QRect rectOfPixmap = pixmap.rect();
-    rectOfPixmap.moveBottomRight(viewport.bottomRight());
+    if (m_centered) {
+        rectOfPixmap.moveCenter(viewport.center());
+    } else {
+        rectOfPixmap.moveBottomRight(viewport.bottomRight());
+    }
     painter->drawPixmap(rectOfPixmap.topLeft(), pixmap);
     painter->setOpacity(1.0);
 };
