@@ -55,10 +55,27 @@ bool linked(const QFileInfo& path)
 }
 
 namespace SvinPortableUpdate {
-int releaseNumber(const QString& tag)
+QString ReleaseVersion::identifier() const
 {
-    static const QRegularExpression pattern(R"(\Asvin-r([1-9][0-9]{0,8})\z)");
-    return pattern.match(tag).captured(1).toInt();
+    const auto tag = QStringLiteral("svin-r%1").arg(release);
+    return revision > 0 ? tag + QStringLiteral(".%1").arg(revision) : tag;
+}
+
+ReleaseVersion parseVersion(const QString& identifier)
+{
+    static const QRegularExpression pattern(R"(\Asvin-r([1-9][0-9]{0,8})(?:\.([1-9][0-9]{0,8}))?\z)");
+    const auto match = pattern.match(identifier);
+    return { match.captured(1).toInt(), match.captured(2).toInt() };
+}
+
+ReleaseVersion assetVersion(const QString& releaseTag, const QString& assetName)
+{
+    const auto tag = parseVersion(releaseTag);
+    const auto prefix = QStringLiteral("Svin-Launcher-Windows-x64-");
+    if (!tag.isValid() || tag.revision != 0 || !assetName.startsWith(prefix) || !assetName.endsWith(".zip"))
+        return {};
+    const auto version = parseVersion(QStringLiteral("svin-") + assetName.sliced(prefix.size()).chopped(4));
+    return version.release == tag.release ? version : ReleaseVersion{};
 }
 
 Result<> unpack(const QString& archivePath, const QDir& staging)

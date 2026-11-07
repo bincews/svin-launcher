@@ -454,7 +454,12 @@ void PrismUpdaterApp::run()
         return;
     }
 
-    if (BuildConfig.SVIN_RELEASE > 0 || !loadPrismVersionFromExe(m_prismExecutable)) {
+    if (BuildConfig.SVIN_RELEASE > 0) {
+        runSvinUpdate();
+        return;
+    }
+
+    if (!loadPrismVersionFromExe(m_prismExecutable)) {
         m_prismVersion = BuildConfig.printableVersionString();
         m_prismVersionMajor = BuildConfig.VERSION_MAJOR;
         m_prismVersionMinor = BuildConfig.VERSION_MINOR;
@@ -530,14 +535,64 @@ void PrismUpdaterApp::run()
             }
         }
 
-        if (BuildConfig.SVIN_RELEASE > 0 && (!needUpdate(updateRelease) || updateRelease.prerelease || updateRelease.draft)) {
-            fail("The selected release is not newer than this version of Svin");
-            return;
-        }
         performUpdate(updateRelease);
     }
 
     exit(0);
+}
+
+void PrismUpdaterApp::runSvinUpdate()
+{
+    using namespace SvinPortableUpdate;
+    const ReleaseVersion installed{ BuildConfig.SVIN_RELEASE, BuildConfig.SVIN_REVISION };
+    const bool installSpecific = !m_checkOnly && !m_userSelectedVersion.isEmpty();
+    const auto requested = parseVersion(m_userSelectedVersion.toString());
+    static const QRegularExpression sha256(R"(\Asha256:[a-fA-F0-9]{64}\z)");
+
+    const GitHubRelease* selectedRelease = nullptr;
+    const GitHubReleaseAsset* selectedAsset = nullptr;
+    auto selectedVersion = installed;
+    if (m_isPortable) {
+        for (const auto& release : m_releases) {
+            if (release.draft || release.prerelease)
+                continue;
+            for (const auto& asset : release.assets) {
+                const auto version = assetVersion(release.tag_name, asset.name);
+                if (version <= selectedVersion || (installSpecific && version != requested))
+                    continue;
+                const auto url = QStringLiteral("%1/releases/download/%2/%3")
+                                     .arg(BuildConfig.UPDATER_GITHUB_REPO, release.tag_name, asset.name);
+                if (asset.browser_download_url != url || asset.size <= 0 || !sha256.match(asset.digest).hasMatch())
+                    continue;
+                selectedRelease = &release;
+                selectedAsset = &asset;
+                selectedVersion = version;
+            }
+        }
+    }
+    qDebug() << "Installed Svin version:" << installed.identifier() << "selected:" << selectedVersion.identifier();
+
+    if (!selectedAsset) {
+        if (installSpecific)
+            showFatalErrorMessage(tr("Update Failed"), tr("This Svin update is no longer available."));
+        else
+            exit(0);
+        return;
+    }
+
+    const auto version = selectedVersion.identifier();
+    if (m_checkOnly) {
+        QTextStream output(stdout);
+        output << "Name: " << BuildConfig.LAUNCHER_DISPLAYNAME << " " << version.sliced(5) << "\n";
+        output << "Version: " << version << "\n";
+        output << "TimeStamp: " << selectedRelease->created_at.toString(Qt::ISODate) << "\n";
+        output << selectedRelease->body << "\n";
+        output.flush();
+        exit(100);
+        return;
+    }
+
+    performSvinUpdate(*selectedAsset, version);
 }
 
 void PrismUpdaterApp::moveAndFinishUpdate(const QDir& target)
@@ -714,20 +769,6 @@ QList<GitHubReleaseAsset> PrismUpdaterApp::validReleaseArtifacts(const GitHubRel
 {
     QList<GitHubReleaseAsset> valid;
 
-    if (BuildConfig.SVIN_RELEASE > 0) {
-        static const QRegularExpression sha256(R"(\Asha256:[a-fA-F0-9]{64}\z)");
-        const auto number = SvinPortableUpdate::releaseNumber(release.tag_name);
-        if (!number || !m_isPortable)
-            return valid;
-        const auto name = QStringLiteral("Svin-Launcher-Windows-x64-r%1.zip").arg(number);
-        const auto url = QStringLiteral("%1/releases/download/%2/%3").arg(BuildConfig.UPDATER_GITHUB_REPO, release.tag_name, name);
-        for (const auto& asset : release.assets) {
-            if (asset.name == name && asset.browser_download_url == url && asset.size > 0 && sha256.match(asset.digest).hasMatch())
-                valid.append(asset);
-        }
-        return valid;
-    }
-
     qDebug() << "Selecting best asset from" << release.tag_name << "for platform" << BuildConfig.BUILD_ARTIFACT
              << "portable:" << m_isPortable;
     if (BuildConfig.BUILD_ARTIFACT.isEmpty()) {
@@ -828,27 +869,31 @@ void PrismUpdaterApp::performUpdate(const GitHubRelease& release)
     }
 
     qDebug() << "will install" << selectedAsset;
+    const auto file = downloadAsset(selectedAsset, QDir::tempPath());
+    if (!file.exists()) {
+        showFatalErrorMessage(tr("Failed to Download"), tr("Failed to download the selected asset."));
+        return;
+    }
+    performInstall(file);
+}
+
+void PrismUpdaterApp::performSvinUpdate(const GitHubReleaseAsset& asset, const QString& version)
+{
     QTemporaryDir workspace(QDir::temp().filePath("svin-update-XXXXXX"));
-    const bool svin = BuildConfig.SVIN_RELEASE > 0;
-    if (svin && !workspace.isValid()) {
+    if (!workspace.isValid()) {
         showFatalErrorMessage(tr("Update Failed"), tr("Could not create the temporary update folder."));
         return;
     }
     QLockFile updateLock(QDir(m_rootPath).filePath(".svin-update.lock"));
     updateLock.setStaleLockTime(0);
-    if (svin && (!updateLock.tryLock() || !waitForProcess(m_parentPid))) {
+    if (!updateLock.tryLock() || !waitForProcess(m_parentPid)) {
         showFatalErrorMessage(tr("Update Failed"), tr("Close Svin Launcher before installing the update."));
         return;
     }
-    auto file = downloadAsset(selectedAsset, svin ? workspace.path() : QDir::tempPath());
+    auto file = downloadAsset(asset, workspace.path());
 
     if (!file.exists()) {
         showFatalErrorMessage(tr("Failed to Download"), tr("Failed to download the selected asset."));
-        return;
-    }
-
-    if (!svin) {
-        performInstall(file);
         return;
     }
 
@@ -864,17 +909,19 @@ void PrismUpdaterApp::performUpdate(const GitHubRelease& release)
     installer.setProgram(payload.filePath("svinlauncher_updater.exe"));
     installer.setWorkingDirectory(payload.absolutePath());
     installer.setArguments({ "--svin-target", m_rootPath, "--svin-parent", QString::number(applicationPid()),
-                             "--install-version", release.tag_name, "--dir", m_dataPath });
+                             "--install-version", version, "--dir", m_dataPath });
     if (!installer.startDetached()) {
         showFatalErrorMessage(tr("Update Failed"), installer.errorString());
         return;
     }
     workspace.setAutoRemove(false);
+    exit(0);
 }
 
 void PrismUpdaterApp::finishSvinUpdate(const QDir& target, const QString& parentPid, const QString& version)
 {
-    if (SvinPortableUpdate::releaseNumber(version) != BuildConfig.SVIN_RELEASE || !waitForProcess(parentPid)) {
+    const SvinPortableUpdate::ReleaseVersion installed{ BuildConfig.SVIN_RELEASE, BuildConfig.SVIN_REVISION };
+    if (SvinPortableUpdate::parseVersion(version) != installed || !waitForProcess(parentPid)) {
         showFatalErrorMessage(tr("Update Failed"), tr("The downloaded version does not match the release, or the previous process is still running."));
         return;
     }
@@ -1408,11 +1455,9 @@ GitHubRelease PrismUpdaterApp::getLatestRelease()
         if (release.draft) {
             continue;
         }
-        if (release.prerelease && (!m_allowPreRelease || BuildConfig.SVIN_RELEASE > 0)) {
+        if (release.prerelease && !m_allowPreRelease) {
             continue;
         }
-        if (BuildConfig.SVIN_RELEASE > 0 && validReleaseArtifacts(release).isEmpty())
-            continue;
         if (!latest.isValid() || (release.version > latest.version)) {
             latest = release;
         }
@@ -1422,8 +1467,6 @@ GitHubRelease PrismUpdaterApp::getLatestRelease()
 
 bool PrismUpdaterApp::needUpdate(const GitHubRelease& release) const
 {
-    if (BuildConfig.SVIN_RELEASE > 0)
-        return SvinPortableUpdate::releaseNumber(release.tag_name) > BuildConfig.SVIN_RELEASE;
     auto currentVer = Version(QString("%1.%2.%3").arg(m_prismVersionMajor).arg(m_prismVersionMinor).arg(m_prismVersionPatch));
     return currentVer < release.version;
 }

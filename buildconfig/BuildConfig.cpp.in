@@ -59,6 +59,7 @@ Config::Config()
     VERSION_MINOR = @Launcher_VERSION_MINOR@;
     VERSION_PATCH = @Launcher_VERSION_PATCH@;
     SVIN_RELEASE = @Launcher_SVIN_RELEASE@;
+    SVIN_REVISION = @Launcher_SVIN_REVISION@;
 
     BUILD_PLATFORM = "@Launcher_BUILD_PLATFORM@";
     BUILD_ARTIFACT = "@Launcher_BUILD_ARTIFACT@";
@@ -136,6 +137,8 @@ QString Config::versionString() const
 QString Config::printableVersionString() const
 {
     if (SVIN_RELEASE > 0) {
+        if (SVIN_REVISION > 0)
+            return QStringLiteral("r%1.%2").arg(SVIN_RELEASE).arg(SVIN_REVISION);
         return QStringLiteral("r%1").arg(SVIN_RELEASE);
     }
     QString vstr = versionString();

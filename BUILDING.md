@@ -23,11 +23,12 @@ cmake --install build --config Release
 cmake --install build --config Release --component portable
 ```
 
-Для релиза r6 добавь `-DLauncher_SVIN_RELEASE=6` к команде настройки CMake.
-Для следующих релизов укажи соответствующий номер. Архив
-`Svin-Launcher-Windows-x64-rN.zip` должен содержать папку
+Для r6.1 добавь `-DLauncher_SVIN_RELEASE=6 -DLauncher_SVIN_REVISION=1` к команде настройки CMake.
+Для нового релиза rN укажи номер релиза и ревизию 0.
+Архив `Svin-Launcher-Windows-x64-rN.zip` или `Svin-Launcher-Windows-x64-rN.M.zip`
+для ревизии M должен содержать папку
 `Svin-Launcher-Windows-x64` с файлами установки, включая `svinlauncher_updater.exe`.
-Прикрепи его к релизу с тегом `svin-rN`.
+Архивы всех ревизий прикрепляются к одному релизу с тегом `svin-rN`.
 
 Результат — `install/svinlauncher.exe` и зависимости рядом с ним.
 Для переносной сборки нужны DLL из

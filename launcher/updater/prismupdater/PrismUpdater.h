@@ -77,6 +77,8 @@ class PrismUpdaterApp : public QApplication {
     QList<GitHubReleaseAsset> validReleaseArtifacts(const GitHubRelease& release) const;
     static GitHubReleaseAsset selectAsset(const QList<GitHubReleaseAsset>& assets);
     void performUpdate(const GitHubRelease& release);
+    void runSvinUpdate();
+    void performSvinUpdate(const GitHubReleaseAsset& asset, const QString& version);
     void performInstall(const QFileInfo& file);
     void unpackAndInstall(const QFileInfo& archive);
     void backupAppDir();

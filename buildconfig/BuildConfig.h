@@ -69,6 +69,7 @@ class Config {
      */
     QString VERSION_CHANNEL;
     int SVIN_RELEASE;
+    int SVIN_REVISION;
 
     bool UPDATER_ENABLED = false;
     bool JAVA_DOWNLOADER_ENABLED = false;

@@ -192,6 +192,12 @@ string(LENGTH "${Launcher_SVIN_RELEASE}" Launcher_SVIN_RELEASE_LENGTH)
 if(NOT Launcher_SVIN_RELEASE MATCHES "^(0|[1-9][0-9]*)$" OR Launcher_SVIN_RELEASE_LENGTH GREATER 9)
     message(FATAL_ERROR "Launcher_SVIN_RELEASE must be a non-negative integer")
 endif()
+set(Launcher_SVIN_REVISION "0" CACHE STRING "Revision within a Svin release")
+string(LENGTH "${Launcher_SVIN_REVISION}" Launcher_SVIN_REVISION_LENGTH)
+if(NOT Launcher_SVIN_REVISION MATCHES "^(0|[1-9][0-9]*)$" OR Launcher_SVIN_REVISION_LENGTH GREATER 9
+   OR (Launcher_SVIN_RELEASE EQUAL 0 AND Launcher_SVIN_REVISION GREATER 0))
+    message(FATAL_ERROR "Launcher_SVIN_REVISION must be a non-negative integer within a Svin release")
+endif()
 
 set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}")
 set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.0")

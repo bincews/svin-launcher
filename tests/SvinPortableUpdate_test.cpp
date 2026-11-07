@@ -11,10 +11,30 @@ class SvinPortableUpdateTest : public QObject {
    private slots:
     void releaseNumbers()
     {
-        QCOMPARE(SvinPortableUpdate::releaseNumber("svin-r3"), 3);
-        QVERIFY(SvinPortableUpdate::releaseNumber("svin-r10") > SvinPortableUpdate::releaseNumber("svin-r9"));
-        QCOMPARE(SvinPortableUpdate::releaseNumber("svin-r4-beta"), 0);
-        QCOMPARE(SvinPortableUpdate::releaseNumber("12.0.0"), 0);
+        using SvinPortableUpdate::parseVersion;
+        QCOMPARE(parseVersion("svin-r6").release, 6);
+        QCOMPARE(parseVersion("svin-r6").revision, 0);
+        QCOMPARE(parseVersion("svin-r6.1").identifier(), QString("svin-r6.1"));
+        QVERIFY(parseVersion("svin-r6.1") > parseVersion("svin-r6"));
+        QVERIFY(parseVersion("svin-r6.10") > parseVersion("svin-r6.9"));
+        QVERIFY(parseVersion("svin-r7") > parseVersion("svin-r6.999"));
+        QVERIFY(!parseVersion("svin-r6.0").isValid());
+        QVERIFY(!parseVersion("svin-r6.1-beta").isValid());
+        QVERIFY(!parseVersion("12.0.0").isValid());
+    }
+
+    void assetsInOneRelease()
+    {
+        using SvinPortableUpdate::assetVersion;
+        const auto base = assetVersion("svin-r6", "Svin-Launcher-Windows-x64-r6.zip");
+        const auto revision = assetVersion("svin-r6", "Svin-Launcher-Windows-x64-r6.2.zip");
+        QVERIFY(base.isValid());
+        QVERIFY(revision > base);
+        QCOMPARE(revision.identifier(), QString("svin-r6.2"));
+        QVERIFY(!assetVersion("svin-r5", "Svin-Launcher-Windows-x64-r6.2.zip").isValid());
+        QVERIFY(!assetVersion("svin-r6.2", "Svin-Launcher-Windows-x64-r6.2.zip").isValid());
+        QVERIFY(!assetVersion("svin-r6", "Svin-Launcher-Windows-arm64-r6.2.zip").isValid());
+        QVERIFY(!assetVersion("svin-r6", "Svin-Launcher-Windows-x64-r6.2.exe").isValid());
     }
 
     void preservesPortableData()
