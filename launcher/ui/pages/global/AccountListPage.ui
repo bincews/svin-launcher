@@ -90,7 +90,7 @@
     <string>Load Ely.by avatar</string>
    </property>
    <property name="toolTip">
-    <string>Load the avatar by nickname. To see skins in Minecraft, use Ely.by skins in the instance's Mods tab.</string>
+    <string>Load the launcher avatar by nickname.</string>
    </property>
   </action>
   <action name="actionAddMicrosoft">

@@ -20,6 +20,7 @@
 #include <minecraft/auth/AuthSession.h>
 
 #include "MinecraftTarget.h"
+#include "net/Request.h"
 
 class LauncherPartLaunch : public LaunchStep {
     Q_OBJECT
@@ -40,7 +41,10 @@ class LauncherPartLaunch : public LaunchStep {
     void on_state(LoggedProcess::State state);
 
    private:
+    void startGame(QStringList classPath, bool elySkins);
+
     LoggedProcess m_process;
+    Net::Request::Ptr m_elyDownload;
     QString m_command;
     AuthSessionPtr m_session;
     QString m_launchScript;

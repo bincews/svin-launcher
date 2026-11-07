@@ -131,8 +131,36 @@ msgid "Load Ely.by avatar"
 msgstr "Загрузить аватар Ely.by"
 
 msgctxt "AccountListPage"
-msgid "Load the avatar by nickname. To see skins in Minecraft, use Ely.by skins in the instance's Mods tab."
-msgstr "Загрузить аватар по нику. Для скинов в игре открой «Скины Ely.by в Minecraft» на вкладке «Моды» нужной сборки."
+msgid "Load the launcher avatar by nickname."
+msgstr "Загрузить аватар по нику."
+
+msgctxt "MinecraftSettingsWidget"
+msgid "Ely.by skins for local profiles"
+msgstr "Скины Ely.by для локальных профилей"
+
+msgctxt "MinecraftSettingsWidget"
+msgid "Tweaks"
+msgstr "Дополнительно"
+
+msgctxt "MinecraftSettingsWidget"
+msgid "Load Ely.by skins by player name on supported Minecraft versions."
+msgstr "Подгружать скины Ely.by по никам в поддерживаемых версиях Minecraft."
+
+msgctxt "LauncherPartLaunch"
+msgid "Launch online once to download the Ely.by skin library."
+msgstr "Запусти игру с интернетом, чтобы скачать библиотеку скинов Ely.by."
+
+msgctxt "LauncherPartLaunch"
+msgid "Downloading the Ely.by skin library…"
+msgstr "Загружаем библиотеку скинов Ely.by…"
+
+msgctxt "LauncherPartLaunch"
+msgid "Could not load the Ely.by skin library: %1"
+msgstr "Не удалось загрузить библиотеку скинов Ely.by: %1"
+
+msgctxt "LauncherPartLaunch"
+msgid "Ely.by skins enabled for this launch."
+msgstr "Поддержка скинов Ely.by включена."
 
 msgctxt "AccountListPage"
 msgid "Ely.by skin"

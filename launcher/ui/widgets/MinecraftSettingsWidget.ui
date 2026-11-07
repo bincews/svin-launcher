@@ -657,6 +657,16 @@ It is most likely you will need to change the path - please refer to the mod's w
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
+            <widget class="QCheckBox" name="elyByGameSkins">
+             <property name="text">
+              <string>Ely.by skins for local profiles</string>
+             </property>
+             <property name="toolTip">
+              <string>Load Ely.by skins by player name on supported Minecraft versions.</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QGroupBox" name="legacySettingsGroupBox">
              <property name="title">
               <string>&amp;Legacy Tweaks</string>

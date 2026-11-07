@@ -210,6 +210,9 @@ void MinecraftSettingsWidget::loadSettings()
     // Legacy Tweaks
     m_ui->legacySettingsGroupBox->setChecked(m_instance == nullptr || settings->get("OverrideLegacySettings").toBool());
     m_ui->onlineFixes->setChecked(settings->get("OnlineFixes").toBool());
+    m_ui->elyByGameSkins->setVisible(m_instance == nullptr);
+    if (!m_instance)
+        m_ui->elyByGameSkins->setChecked(settings->get("ElyByGameSkins").toBool());
 
     // Native Libraries
     m_ui->nativeWorkaroundsGroupBox->setChecked(m_instance == nullptr || settings->get("OverrideNativeWorkarounds").toBool());
@@ -527,6 +530,8 @@ void MinecraftSettingsWidget::saveSettings()
     } else {
         settings->reset("OnlineFixes");
     }
+    if (!m_instance)
+        settings->set("ElyByGameSkins", m_ui->elyByGameSkins->isChecked());
 
     if (m_javaSettings != nullptr) {
         m_javaSettings->saveSettings();
