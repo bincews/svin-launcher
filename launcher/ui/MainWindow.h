@@ -120,7 +120,6 @@ class MainWindow : public QMainWindow {
     void on_actionViewJavaFolder_triggered();
     void on_actionViewTemplateFolder_triggered();
 
-    void on_actionViewSkinsFolder_triggered();
 
     void on_actionViewSelectedInstFolder_triggered();
 

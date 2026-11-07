@@ -39,8 +39,36 @@ msgid "Check for launcher updates"
 msgstr "Проверить обновления Svin"
 
 msgctxt "MainWindow"
-msgid "Svin releases on GitHub"
-msgstr "Релизы Svin на GitHub"
+msgid "Background"
+msgstr "Фон"
+
+msgctxt "MainWindow"
+msgid "Show or hide the instance list background."
+msgstr "Показать или скрыть фон списка сборок."
+
+msgctxt "QObject"
+msgid "Svin pig"
+msgstr "Свин"
+
+msgctxt "AppearanceWidget"
+msgid "Open the backgrounds folder."
+msgstr "Открыть папку с фонами."
+
+msgctxt "AppearanceWidget"
+msgid "&Background:"
+msgstr "&Фон:"
+
+msgctxt "AppearanceWidget"
+msgid "Enable background"
+msgstr "Включить фон"
+
+msgctxt "AppearanceWidget"
+msgid "Background opacity"
+msgstr "Непрозрачность фона"
+
+msgctxt "AppearanceWidget"
+msgid "Background scaling"
+msgstr "Масштабирование фона"
 
 msgctxt "PrismExternalUpdater"
 msgid "Checking for updates..."

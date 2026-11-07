@@ -217,10 +217,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->actionHelpButton->setMenu(new QMenu(this));
         ui->actionHelpButton->menu()->addActions(ui->helpMenu->actions());
         helpMenuButton->setPopupMode(QToolButton::InstantPopup);
-        connect(ui->actionProjectRepository, &QAction::triggered, this,
-                [] { DesktopServices::openUrl(QUrl(BuildConfig.LAUNCHER_GIT)); });
-        connect(ui->actionSvinReleases, &QAction::triggered, this,
-                [] { DesktopServices::openUrl(QUrl(BuildConfig.LAUNCHER_GIT + "/releases/latest")); });
 
         auto accountMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionAccountsButton));
         accountMenuButton->setPopupMode(QToolButton::InstantPopup);
@@ -1336,11 +1332,6 @@ void MainWindow::on_actionViewInstanceFolder_triggered()
 void MainWindow::on_actionViewCentralModsFolder_triggered()
 {
     DesktopServices::openPath(APPLICATION->settings()->get("CentralModsDir").toString(), true);
-}
-
-void MainWindow::on_actionViewSkinsFolder_triggered()
-{
-    DesktopServices::openPath(APPLICATION->settings()->get("SkinsDir").toString(), true);
 }
 
 void MainWindow::on_actionViewIconThemeFolder_triggered()
