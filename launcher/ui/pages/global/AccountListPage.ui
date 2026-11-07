@@ -87,10 +87,10 @@
   </action>
   <action name="actionElySkin">
    <property name="text">
-    <string>Load Ely.by skin</string>
+    <string>Load Ely.by avatar</string>
    </property>
    <property name="toolTip">
-    <string>Download the skin for this nickname and use it as the account avatar in Svin</string>
+    <string>Load the avatar by nickname. To see skins in Minecraft, use Ely.by skins in the instance's Mods tab.</string>
    </property>
   </action>
   <action name="actionAddMicrosoft">

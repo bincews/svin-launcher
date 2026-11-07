@@ -35,6 +35,10 @@ msgid "Launcher help"
 msgstr "Справка по Svin"
 
 msgctxt "MainWindow"
+msgid "F&olders"
+msgstr "&Папки"
+
+msgctxt "MainWindow"
 msgid "Check for launcher updates"
 msgstr "Проверить обновления Svin"
 
@@ -123,12 +127,12 @@ msgid "What name would you like to use in the game?"
 msgstr "Какой ник использовать в игре?"
 
 msgctxt "AccountListPage"
-msgid "Load Ely.by skin"
-msgstr "Загрузить скин Ely.by"
+msgid "Load Ely.by avatar"
+msgstr "Загрузить аватар Ely.by"
 
 msgctxt "AccountListPage"
-msgid "Download the skin for this nickname and use it as the account avatar in Svin"
-msgstr "Загрузить скин по нику и поставить его на аватар профиля в Svin"
+msgid "Load the avatar by nickname. To see skins in Minecraft, use Ely.by skins in the instance's Mods tab."
+msgstr "Загрузить аватар по нику. Для скинов в игре открой «Скины Ely.by в Minecraft» на вкладке «Моды» нужной сборки."
 
 msgctxt "AccountListPage"
 msgid "Ely.by skin"

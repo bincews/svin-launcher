@@ -275,6 +275,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->actionAddInstance->setShortcut(QKeySequence::New);
         ui->actionSettings->setShortcut(QKeySequence::Preferences);
         ui->actionUndoTrashInstance->setShortcut(QKeySequence::Undo);
+        addAction(ui->actionUndoTrashInstance);
         ui->actionDeleteInstance->setShortcuts({ QKeySequence(tr("Backspace")), QKeySequence::Delete });
         ui->actionCloseWindow->setShortcut(QKeySequence::Close);
         connect(ui->actionCloseWindow, &QAction::triggered, APPLICATION, &Application::closeCurrentWindow);
@@ -432,9 +433,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     retranslateUi();
 }
 
-// macOS always has a native menu bar, so these fixes are not applicable
-// Other systems may or may not have a native menu bar (most do not - it seems like only Ubuntu Unity does)
-#ifndef Q_OS_MAC
+#if !defined(Q_OS_MAC) && !defined(Q_OS_WIN)
 void MainWindow::keyReleaseEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Alt && !APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool())
@@ -580,6 +579,8 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
         actions.prepend(actionSep);
         actions.prepend(actionVoid);
         actions.append(actionCreateInstance);
+        if (ui->actionUndoTrashInstance->isEnabled())
+            actions.append(ui->actionUndoTrashInstance);
         if (!group.isNull()) {
             auto* actionDeleteGroup = new QAction(tr("&Delete group"), menu);
             connect(actionDeleteGroup, &QAction::triggered, this, [this, group] { deleteGroup(group); });
