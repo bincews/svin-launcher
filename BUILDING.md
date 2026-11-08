@@ -23,7 +23,7 @@ cmake --install build --config Release
 cmake --install build --config Release --component portable
 ```
 
-Для r9 добавь `-DLauncher_SVIN_RELEASE=9` к команде настройки CMake.
+Для r8 добавь `-DLauncher_SVIN_RELEASE=8` к команде настройки CMake.
 Если нужен отдельный номер ревизии, добавь `-DLauncher_SVIN_REVISION=1`.
 Для нового релиза rN укажи номер релиза и ревизию 0.
 Архив `Svin-Launcher-Windows-x64-rN.zip` или `Svin-Launcher-Windows-x64-rN.M.zip`
