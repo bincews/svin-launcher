@@ -152,7 +152,8 @@ void PrismExternalUpdater::checkForUpdates(bool triggeredByUser)
             const auto versionTag = StringUtils::splitFirst(secondLine, ": ").second.trimmed();
             offerUpdate(versionName, versionTag, releaseNotes, triggeredByUser);
         } else if (triggeredByUser) {
-            QMessageBox::information(priv->parent, tr("No Update Available"), tr("You are running the latest version."));
+            QMessageBox::information(priv->parent, tr("No Update Available"),
+                                     tr("You are running the latest version of Svin Launcher (%1).").arg(BuildConfig.printableVersionString()));
         }
 
         priv->checkProcess = nullptr;

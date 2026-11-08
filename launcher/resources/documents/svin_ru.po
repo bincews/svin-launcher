@@ -91,8 +91,8 @@ msgid "No Update Available"
 msgstr "Обновлений нет"
 
 msgctxt "PrismExternalUpdater"
-msgid "You are running the latest version."
-msgstr "У тебя последняя версия Svin."
+msgid "You are running the latest version of Svin Launcher (%1)."
+msgstr "У тебя последняя версия Svin Launcher (%1)."
 
 msgctxt "PrismExternalUpdater"
 msgid "Close the running game before updating Svin Launcher."
