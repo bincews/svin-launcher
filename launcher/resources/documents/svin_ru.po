@@ -95,6 +95,10 @@ msgid "You are running the latest version of Svin Launcher (%1)."
 msgstr "У тебя последняя версия Svin Launcher (%1)."
 
 msgctxt "PrismExternalUpdater"
+msgid "%1 (updated build)"
+msgstr "%1 (обновлённая сборка)"
+
+msgctxt "PrismExternalUpdater"
 msgid "Close the running game before updating Svin Launcher."
 msgstr "Закрой Minecraft, чтобы обновить Svin."
 
@@ -127,8 +131,8 @@ msgid "What name would you like to use in the game?"
 msgstr "Какой ник использовать в игре?"
 
 msgctxt "AccountListPage"
-msgid "Refresh Ely.by avatar"
-msgstr "Обновить аватар Ely.by"
+msgid "Load Ely.by avatar"
+msgstr "Загрузить аватар Ely.by"
 
 msgctxt "AccountListPage"
 msgid "Load the launcher avatar by nickname."

@@ -23,13 +23,20 @@ cmake --install build --config Release
 cmake --install build --config Release --component portable
 ```
 
-Для r8 добавь `-DLauncher_SVIN_RELEASE=8` к команде настройки CMake.
-Для ревизии r8.1 добавь также `-DLauncher_SVIN_REVISION=1`.
+Для r9 добавь `-DLauncher_SVIN_RELEASE=9` к команде настройки CMake.
+Если нужен отдельный номер ревизии, добавь `-DLauncher_SVIN_REVISION=1`.
 Для нового релиза rN укажи номер релиза и ревизию 0.
 Архив `Svin-Launcher-Windows-x64-rN.zip` или `Svin-Launcher-Windows-x64-rN.M.zip`
 для ревизии M должен содержать папку
 `Svin-Launcher-Windows-x64` с файлами установки, включая `svinlauncher_updater.exe`.
 Архивы всех ревизий прикрепляются к одному релизу с тегом `svin-rN`.
+
+Перед упаковкой релизной сборки запусти в Python 3.11 или новее
+`python scripts/stamp-svin-package.py install` после добавления всех файлов в
+папку установки. Скрипт запишет идентификатор сборки в `portable.txt` и выведет
+метку для архива на GitHub. При замене архива с тем же номером вычисли метку
+заново и укажи её в поле Label у загруженного ZIP. После установки через
+обновлятор Svin запоминает также контрольную сумму скачанного архива.
 
 Результат — `install/svinlauncher.exe` и зависимости рядом с ним.
 Для переносной сборки нужны DLL из

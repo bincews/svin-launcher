@@ -546,8 +546,10 @@ void PrismUpdaterApp::runSvinUpdate()
     using namespace SvinPortableUpdate;
     const ReleaseVersion installed{ BuildConfig.SVIN_RELEASE, BuildConfig.SVIN_REVISION };
     const bool installSpecific = !m_checkOnly && !m_userSelectedVersion.isEmpty();
-    const auto requested = parseVersion(m_userSelectedVersion.toString());
-    static const QRegularExpression sha256(R"(\Asha256:[a-fA-F0-9]{64}\z)");
+    const auto [requestedVersion, requestedDigest] = StringUtils::splitFirst(m_userSelectedVersion.toString(), '@');
+    const auto requested = parseVersion(requestedVersion);
+    const QDir installation(m_rootPath);
+    const auto marker = FS::read(installation.filePath("portable.txt")).value_or(QByteArray{});
 
     const GitHubRelease* selectedRelease = nullptr;
     const GitHubReleaseAsset* selectedAsset = nullptr;
@@ -558,12 +560,26 @@ void PrismUpdaterApp::runSvinUpdate()
                 continue;
             for (const auto& asset : release.assets) {
                 const auto version = assetVersion(release.tag_name, asset.name);
-                if (version <= selectedVersion || (installSpecific && version != requested))
+                if (version < selectedVersion || (selectedAsset && version == selectedVersion) ||
+                    (installSpecific && (version != requested || (!requestedDigest.isEmpty() && requestedDigest != asset.digest))))
                     continue;
                 const auto url = QStringLiteral("%1/releases/download/%2/%3")
                                      .arg(BuildConfig.UPDATER_GITHUB_REPO, release.tag_name, asset.name);
-                if (asset.browser_download_url != url || asset.size <= 0 || !sha256.match(asset.digest).hasMatch())
+                if (asset.browser_download_url != url || asset.size <= 0 || !validArchiveDigest(asset.digest))
                     continue;
+                if (version == installed) {
+                    if (m_checkOnly && matchesPayload(marker, asset.label) && !marker.split('\n').contains(asset.digest.toLatin1())) {
+                        QLockFile updateLock(installation.filePath(".svin-update.lock"));
+                        updateLock.setStaleLockTime(0);
+                        if (updateLock.tryLock() &&
+                            matchesPayload(FS::read(installation.filePath("portable.txt")).value_or(QByteArray{}), asset.label)) {
+                            if (auto result = recordArchive(installation, asset.digest); !result)
+                                qWarning() << result.error();
+                        }
+                    }
+                    if ((installSpecific && requestedDigest.isEmpty()) || !isReplacement(marker, asset.digest, asset.label))
+                        continue;
+                }
                 selectedRelease = &release;
                 selectedAsset = &asset;
                 selectedVersion = version;
@@ -584,7 +600,10 @@ void PrismUpdaterApp::runSvinUpdate()
     if (m_checkOnly) {
         QTextStream output(stdout);
         output << "Name: " << BuildConfig.LAUNCHER_DISPLAYNAME << " " << version.sliced(5) << "\n";
-        output << "Version: " << version << "\n";
+        output << "Version: " << version;
+        if (selectedVersion == installed)
+            output << '@' << selectedAsset->digest;
+        output << "\n";
         output << "TimeStamp: " << selectedRelease->created_at.toString(Qt::ISODate) << "\n";
         output << selectedRelease->body << "\n";
         output.flush();
@@ -901,6 +920,10 @@ void PrismUpdaterApp::performSvinUpdate(const GitHubReleaseAsset& asset, const Q
     const auto result = SvinPortableUpdate::unpack(file.absoluteFilePath(), payload);
     if (!result) {
         showFatalErrorMessage(tr("Update Failed"), result.error());
+        return;
+    }
+    if (auto record = SvinPortableUpdate::recordArchive(payload, asset.digest); !record) {
+        showFatalErrorMessage(tr("Update Failed"), record.error());
         return;
     }
     QFile::remove(file.absoluteFilePath());

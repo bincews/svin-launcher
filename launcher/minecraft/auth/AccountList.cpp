@@ -108,16 +108,15 @@ void AccountList::refreshElySkin(const MinecraftAccountPtr& account, bool manual
         return;
     }
     m_elySkinRequests.insert(account, manual);
-    downloadElySkin(account, QUrl(QStringLiteral("https://skinsystem.ely.by/skins/%1.png").arg(account->profileName())));
+    downloadElySkin(account, QUrl(QStringLiteral("https://skinsystem.ely.by/textures/%1").arg(account->profileName())));
 }
 
-void AccountList::downloadElySkin(const MinecraftAccountPtr& account, const QUrl& url, bool redirected)
+void AccountList::downloadElySkin(const MinecraftAccountPtr& account, const QUrl& url, bool texture)
 {
     constexpr qint64 maxSkinBytes = 128 * 1024;
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
-    if (!redirected) {
-        // Revalidate the nickname URL. Redirects from this URL can point at an older skin.
+    if (!texture) {
         request.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork);
         request.setRawHeader("Cache-Control", "no-cache");
     }
@@ -131,33 +130,38 @@ void AccountList::downloadElySkin(const MinecraftAccountPtr& account, const QUrl
         if (reply->bytesAvailable() > maxSkinBytes)
             reply->abort();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, account, redirected] {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, account, texture] {
         reply->deleteLater();
         if (!m_accounts.contains(account)) {
             m_elySkinRequests.remove(account);
             return;
         }
 
-        const auto redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-        auto target = reply->url().resolved(redirect.toUrl());
-        // Ely.by may return HTTP links to its PNG storage. Fetch the same file over HTTPS.
-        if (!redirected && redirect.isValid() && (target.scheme() == "http" || target.scheme() == "https") &&
-            target.host() == "ely.by" && target.userInfo().isEmpty() && target.port(-1) == -1 &&
-            target.path().startsWith("/storage/skins/")) {
-            target.setScheme("https");
-            downloadElySkin(account, target, true);
-            return;
-        }
-
-        const bool manual = m_elySkinRequests.take(account);
         const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         auto result = ElySkinResult::Failed;
-        if (status == 404) {
+        if (status == 404 || (!texture && status == 204)) {
             result = ElySkinResult::NotFound;
-        } else if (reply->error() == QNetworkReply::NoError && status == 200 && account->setOfflineSkin(reply->readAll())) {
-            result = ElySkinResult::Success;
+        } else if (reply->error() == QNetworkReply::NoError && status == 200) {
+            if (texture) {
+                if (account->setOfflineSkin(reply->readAll()))
+                    result = ElySkinResult::Success;
+            } else {
+                const auto response = QJsonDocument::fromJson(reply->readAll());
+                const auto skin = response.object().value("SKIN");
+                if (response.isObject() && skin.isUndefined())
+                    result = ElySkinResult::NotFound;
+                auto target = QUrl(skin.toObject().value("url").toString());
+                const bool elyStorage = target.host() == "ely.by" && target.path().startsWith("/storage/skins/");
+                const bool mojangStorage = target.host() == "textures.minecraft.net" && target.path().startsWith("/texture/");
+                if ((elyStorage || mojangStorage) && (target.scheme() == "http" || target.scheme() == "https") &&
+                    target.userInfo().isEmpty() && target.port(-1) == -1) {
+                    target.setScheme("https");
+                    downloadElySkin(account, target, true);
+                    return;
+                }
+            }
         }
-        if (manual)
+        if (m_elySkinRequests.take(account))
             emit elySkinRefreshFinished(account, result);
     });
 }

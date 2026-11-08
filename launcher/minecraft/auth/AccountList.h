@@ -149,7 +149,7 @@ class AccountList : public QAbstractListModel {
     void authFailed(QString reason);
 
    private:
-    void downloadElySkin(const MinecraftAccountPtr& account, const QUrl& url, bool redirected = false);
+    void downloadElySkin(const MinecraftAccountPtr& account, const QUrl& url, bool texture = false);
     QNetworkAccessManager* m_elySkinNetwork = nullptr;
     QString m_elySkinUserAgent;
     QHash<MinecraftAccountPtr, bool> m_elySkinRequests;

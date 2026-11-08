@@ -19,6 +19,10 @@ struct ReleaseVersion {
 
 ReleaseVersion parseVersion(const QString& identifier);
 ReleaseVersion assetVersion(const QString& releaseTag, const QString& assetName);
+bool validArchiveDigest(const QString& digest);
+bool isReplacement(const QByteArray& installed, const QString& digest, const QString& label);
+bool matchesPayload(const QByteArray& installed, const QString& label);
+Result<> recordArchive(const QDir& installation, const QString& digest);
 Result<> unpack(const QString& archivePath, const QDir& staging);
 Result<> install(const QDir& staging, const QDir& target);
 }

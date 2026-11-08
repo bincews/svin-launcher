@@ -48,7 +48,10 @@ class SkinNetwork : public QNetworkAccessManager {
     QNetworkReply* createRequest(Operation, const QNetworkRequest& request, QIODevice*) override
     {
         requests.append(request);
-        return new SkinReply(request, png, this);
+        const auto body = request.url().host() == "skinsystem.ely.by"
+                              ? QByteArray(R"({"SKIN":{"url":"http://ely.by/storage/skins/new.png"}})")
+                              : png;
+        return new SkinReply(request, body, this);
     }
 };
 
@@ -218,9 +221,10 @@ class OfflineAccountTest : public QObject {
         accounts.startElySkinRefresh(&network, "Svin test");
         QTRY_COMPARE(offline->accountData()->minecraftProfile.skin.data, network.png);
         QCOMPARE(changed.size(), 1);
-        QCOMPARE(network.requests.size(), 1);
-        QCOMPARE(network.requests.first().url(), QUrl("https://skinsystem.ely.by/skins/LocalPlayer.png"));
+        QCOMPARE(network.requests.size(), 2);
+        QCOMPARE(network.requests.first().url(), QUrl("https://skinsystem.ely.by/textures/LocalPlayer"));
         QCOMPARE(network.requests.first().rawHeader("Cache-Control"), QByteArray("no-cache"));
+        QCOMPARE(network.requests.last().url(), QUrl("https://ely.by/storage/skins/new.png"));
     }
 };
 

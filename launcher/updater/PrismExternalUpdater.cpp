@@ -148,8 +148,10 @@ void PrismExternalUpdater::checkForUpdates(bool triggeredByUser)
             const auto [firstLine, rest1] = StringUtils::splitFirst(stdoutText, '\n');
             const auto [secondLine, rest2] = StringUtils::splitFirst(rest1, '\n');
             const auto releaseNotes = StringUtils::splitFirst(rest2, '\n').second;
-            const auto versionName = StringUtils::splitFirst(firstLine, ": ").second.trimmed();
+            auto versionName = StringUtils::splitFirst(firstLine, ": ").second.trimmed();
             const auto versionTag = StringUtils::splitFirst(secondLine, ": ").second.trimmed();
+            if (BuildConfig.SVIN_RELEASE > 0 && versionTag.contains('@'))
+                versionName = tr("%1 (updated build)").arg(versionName);
             offerUpdate(versionName, versionTag, releaseNotes, triggeredByUser);
         } else if (triggeredByUser) {
             QMessageBox::information(priv->parent, tr("No Update Available"),

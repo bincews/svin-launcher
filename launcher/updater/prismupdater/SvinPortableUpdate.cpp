@@ -52,6 +52,12 @@ bool linked(const QFileInfo& path)
 {
     return path.isSymLink() || path.isJunction();
 }
+
+bool validPayloadId(const QString& label)
+{
+    static const QRegularExpression pattern(R"(\Asvin-payload-sha256:[a-f0-9]{64}\z)");
+    return pattern.match(label).hasMatch();
+}
 }
 
 namespace SvinPortableUpdate {
@@ -76,6 +82,50 @@ ReleaseVersion assetVersion(const QString& releaseTag, const QString& assetName)
         return {};
     const auto version = parseVersion(QStringLiteral("svin-") + assetName.sliced(prefix.size()).chopped(4));
     return version.release == tag.release ? version : ReleaseVersion{};
+}
+
+bool validArchiveDigest(const QString& digest)
+{
+    static const QRegularExpression pattern(R"(\Asha256:[a-f0-9]{64}\z)");
+    return pattern.match(digest).hasMatch();
+}
+
+bool matchesPayload(const QByteArray& installed, const QString& label)
+{
+    return validPayloadId(label) && installed.split('\n').contains(label.toLatin1());
+}
+
+bool isReplacement(const QByteArray& installed, const QString& digest, const QString& label)
+{
+    if (!validArchiveDigest(digest) || matchesPayload(installed, label))
+        return false;
+    bool hasPayloadId = false;
+    for (const auto& line : installed.split('\n')) {
+        const auto id = QString::fromLatin1(line);
+        if (validArchiveDigest(id))
+            return id != digest;
+        hasPayloadId |= validPayloadId(id);
+    }
+    return hasPayloadId && validPayloadId(label);
+}
+
+Result<> recordArchive(const QDir& installation, const QString& digest)
+{
+    const auto marker = installation.filePath("portable.txt");
+    const QFileInfo info(marker);
+    if (!validArchiveDigest(digest) || !info.isFile() || linked(info))
+        return std::unexpected(QStringLiteral("Could not record the Svin archive checksum"));
+
+    TRY_INTO(const auto current, FS::read(marker))
+    QByteArray contents;
+    for (const auto& line : current.split('\n')) {
+        if (!line.isEmpty() && !validArchiveDigest(QString::fromLatin1(line)))
+            contents += line + '\n';
+    }
+    contents += digest.toLatin1() + '\n';
+    if (contents == current)
+        return {};
+    return replaceFile(marker, contents);
 }
 
 Result<> unpack(const QString& archivePath, const QDir& staging)

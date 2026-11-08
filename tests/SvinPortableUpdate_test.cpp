@@ -65,6 +65,35 @@ class SvinPortableUpdateTest : public QObject {
         QCOMPARE(FS::read(destination.filePath("svinlauncher.exe")).value_or(""), "new build");
         QCOMPARE(FS::read(destination.filePath("accounts.json")).value_or(""), "player data");
     }
+
+    void detectsReplacedArchive()
+    {
+        using namespace SvinPortableUpdate;
+        const auto originalPayload = QStringLiteral("svin-payload-sha256:") + QString(64, 'a');
+        const auto updatedPayload = QStringLiteral("svin-payload-sha256:") + QString(64, 'b');
+        const auto originalDigest = QStringLiteral("sha256:") + QString(64, 'c');
+        const auto updatedDigest = QStringLiteral("sha256:") + QString(64, 'd');
+        const auto freshInstall = originalPayload.toLatin1() + '\n';
+        QVERIFY(!isReplacement(freshInstall, originalDigest, originalPayload));
+        QVERIFY(isReplacement(freshInstall, updatedDigest, updatedPayload));
+        QVERIFY(!isReplacement({}, updatedDigest, updatedPayload));
+        QVERIFY(!isReplacement(freshInstall, "invalid", updatedPayload));
+
+        QTemporaryDir install;
+        QVERIFY(install.isValid());
+        const QDir directory(install.path());
+        const auto marker = directory.filePath("portable.txt");
+        QVERIFY(FS::write(marker, freshInstall));
+        QVERIFY(recordArchive(directory, originalDigest));
+        auto recorded = FS::read(marker).value_or(QByteArray{});
+        QCOMPARE(recorded, freshInstall + originalDigest.toLatin1() + '\n');
+        QVERIFY(!isReplacement(recorded, originalDigest, {}));
+        QVERIFY(isReplacement(recorded, updatedDigest, {}));
+        QVERIFY(recordArchive(directory, updatedDigest));
+        recorded = FS::read(marker).value_or(QByteArray{});
+        QCOMPARE(recorded, freshInstall + updatedDigest.toLatin1() + '\n');
+        QVERIFY(!isReplacement(recorded, updatedDigest, {}));
+    }
 };
 
 QTEST_GUILESS_MAIN(SvinPortableUpdateTest)
