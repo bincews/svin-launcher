@@ -1040,6 +1040,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         m_accounts->setListFilePath("accounts.json", true);
         m_accounts->loadList();
         m_accounts->fillQueue();
+        m_accounts->startElySkinRefresh(network(), getUserAgent());
         qInfo() << "<> Accounts loaded.";
     }
 

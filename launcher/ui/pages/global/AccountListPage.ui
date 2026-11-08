@@ -87,7 +87,7 @@
   </action>
   <action name="actionElySkin">
    <property name="text">
-    <string>Load Ely.by avatar</string>
+    <string>Refresh Ely.by avatar</string>
    </property>
    <property name="toolTip">
     <string>Load the launcher avatar by nickname.</string>

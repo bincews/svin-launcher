@@ -101,6 +101,11 @@ AccountState MinecraftAccount::accountState() const
     return data.accountState;
 }
 
+bool MinecraftAccount::hasOfflineSkin() const
+{
+    return data.type == AccountType::Offline && !data.minecraftProfile.skin.data.isEmpty();
+}
+
 bool MinecraftAccount::setOfflineSkin(const QByteArray& png)
 {
     if (data.type != AccountType::Offline || png.isEmpty() || png.size() > 128 * 1024)
@@ -114,8 +119,10 @@ bool MinecraftAccount::setOfflineSkin(const QByteArray& png)
     if ((size != QSize(64, 64) && size != QSize(64, 32)) || reader.read().isNull())
         return false;
 
-    data.minecraftProfile.skin.data = png;
-    emit changed();
+    if (data.minecraftProfile.skin.data != png) {
+        data.minecraftProfile.skin.data = png;
+        emit changed();
+    }
     return true;
 }
 

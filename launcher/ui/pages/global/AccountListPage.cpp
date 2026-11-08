@@ -40,11 +40,7 @@
 
 #include <QItemSelectionModel>
 #include <QMenu>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QNetworkRequest>
 #include <QPushButton>
-#include <QRegularExpression>
 
 #include <QDebug>
 
@@ -82,6 +78,23 @@ AccountListPage::AccountListPage(QWidget* parent) : QMainWindow(parent), ui(new 
     connect(m_accounts, &AccountList::listChanged, this, &AccountListPage::listChanged);
     connect(m_accounts, &AccountList::listActivityChanged, this, &AccountListPage::listChanged);
     connect(m_accounts, &AccountList::defaultAccountChanged, this, &AccountListPage::listChanged);
+    connect(m_accounts, &AccountList::elySkinRefreshFinished, this,
+            [this](const MinecraftAccountPtr& account, AccountList::ElySkinResult result) {
+                switch (result) {
+                    case AccountList::ElySkinResult::Success:
+                        break;
+                    case AccountList::ElySkinResult::InvalidNickname:
+                        QMessageBox::warning(this, tr("Ely.by skin"),
+                                             tr("Ely.by needs a nickname with up to 16 Latin letters, digits or underscores."));
+                        break;
+                    case AccountList::ElySkinResult::NotFound:
+                        QMessageBox::information(this, tr("Ely.by skin"), tr("No skin was found for %1.").arg(account->profileName()));
+                        break;
+                    case AccountList::ElySkinResult::Failed:
+                        QMessageBox::warning(this, tr("Ely.by skin"), tr("Could not load the skin from Ely.by."));
+                        break;
+                }
+            });
 
     updateButtonStates();
 
@@ -219,7 +232,7 @@ void AccountListPage::updateButtonStates()
     ui->actionRemove->setEnabled(accountIsReady);
     ui->actionSetDefault->setEnabled(accountIsReady);
     ui->actionManageSkins->setEnabled(accountIsReady && accountIsOnline);
-    ui->actionElySkin->setEnabled(accountIsReady && !accountIsOnline && !m_elySkinReply);
+    ui->actionElySkin->setEnabled(accountIsReady && !accountIsOnline);
     ui->actionRefresh->setEnabled(accountIsReady && accountIsOnline);
 
     if (m_accounts->defaultAccount().get() == nullptr) {
@@ -248,65 +261,8 @@ void AccountListPage::on_actionManageSkins_triggered()
 void AccountListPage::on_actionElySkin_triggered()
 {
     const auto indexes = ui->listView->selectionModel()->selectedIndexes();
-    if (indexes.isEmpty() || m_elySkinReply)
-        return;
-
-    const auto account = indexes.first().data(AccountList::PointerRole).value<MinecraftAccountPtr>();
-    if (!account || account->accountType() != AccountType::Offline || account->isActive())
-        return;
-
-    static const QRegularExpression validNickname(QStringLiteral("^[A-Za-z0-9_]{1,16}$"));
-    if (!validNickname.match(account->profileName()).hasMatch()) {
-        QMessageBox::warning(this, tr("Ely.by skin"), tr("Ely.by needs a nickname with up to 16 Latin letters, digits or underscores."));
-        return;
-    }
-
-    downloadElySkin(account, QUrl(QStringLiteral("https://skinsystem.ely.by/skins/%1.png").arg(account->profileName())));
-}
-
-void AccountListPage::downloadElySkin(const MinecraftAccountPtr& account, const QUrl& url, bool redirected)
-{
-    constexpr qint64 maxSkinBytes = 128 * 1024;
-    QNetworkRequest request(url);
-    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
-    request.setHeader(QNetworkRequest::UserAgentHeader, APPLICATION->getUserAgent());
-    request.setTransferTimeout(15000);
-    auto* reply = APPLICATION->network()->get(request);
-    reply->setParent(this);
-    reply->setReadBufferSize(maxSkinBytes + 1);
-    m_elySkinReply = reply;
-    updateButtonStates();
-
-    connect(reply, &QNetworkReply::readyRead, this, [reply] {
-        if (reply->bytesAvailable() > maxSkinBytes)
-            reply->abort();
-    });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, account, redirected] {
-        m_elySkinReply.clear();
-        reply->deleteLater();
-        updateButtonStates();
-        const int row = m_accounts->findAccountByProfileId(account->profileId());
-        if (row < 0 || m_accounts->at(row) != account)
-            return;
-
-        auto target = reply->url().resolved(reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl());
-        // Ely.by still returns HTTP links to its PNG storage. Use HTTPS for the same file.
-        if (!redirected && reply->attribute(QNetworkRequest::RedirectionTargetAttribute).isValid() &&
-            (target.scheme() == "http" || target.scheme() == "https") && target.host() == "ely.by" &&
-            target.userInfo().isEmpty() && target.port(-1) == -1 && target.path().startsWith("/storage/skins/")) {
-            target.setScheme("https");
-            downloadElySkin(account, target, true);
-            return;
-        }
-
-        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 404) {
-            QMessageBox::information(this, tr("Ely.by skin"), tr("No skin was found for %1.").arg(account->profileName()));
-        } else if (reply->error() != QNetworkReply::NoError ||
-                   reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200 ||
-                   !account->setOfflineSkin(reply->readAll())) {
-            QMessageBox::warning(this, tr("Ely.by skin"), tr("Could not load the skin from Ely.by."));
-        }
-    });
+    if (!indexes.isEmpty())
+        m_accounts->refreshElySkin(indexes.first().data(AccountList::PointerRole).value<MinecraftAccountPtr>());
 }
 
 void AccountListPage::on_actionMoveUp_triggered()

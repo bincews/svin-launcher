@@ -45,8 +45,12 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QRegularExpression>
 #include <QTextStream>
 #include <QTimer>
+#include <chrono>
 #include "Json.h"
 
 #include <QDebug>
@@ -67,6 +71,96 @@ AccountList::AccountList(QObject* parent) : QAbstractListModel(parent)
 }
 
 AccountList::~AccountList() noexcept {}
+
+void AccountList::startElySkinRefresh(QNetworkAccessManager* network, const QString& userAgent)
+{
+    m_elySkinNetwork = network;
+    m_elySkinUserAgent = userAgent;
+    auto refresh = [this] {
+        for (const auto& account : m_accounts) {
+            // The saved avatar also identifies profiles already using Ely.by.
+            if (account->hasOfflineSkin())
+                refreshElySkin(account, false);
+        }
+    };
+    auto* timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, refresh);
+    timer->start(std::chrono::minutes(1));
+    refresh();
+}
+
+void AccountList::refreshElySkin(const MinecraftAccountPtr& account, bool manual)
+{
+    if (!m_elySkinNetwork || !account || account->accountType() != AccountType::Offline || account->isActive() ||
+        !m_accounts.contains(account))
+        return;
+
+    static const QRegularExpression validNickname(QStringLiteral("\\A[A-Za-z0-9_]{1,16}\\z"));
+    if (!validNickname.match(account->profileName()).hasMatch()) {
+        if (manual)
+            emit elySkinRefreshFinished(account, ElySkinResult::InvalidNickname);
+        return;
+    }
+
+    auto pending = m_elySkinRequests.find(account);
+    if (pending != m_elySkinRequests.end()) {
+        pending.value() |= manual;
+        return;
+    }
+    m_elySkinRequests.insert(account, manual);
+    downloadElySkin(account, QUrl(QStringLiteral("https://skinsystem.ely.by/skins/%1.png").arg(account->profileName())));
+}
+
+void AccountList::downloadElySkin(const MinecraftAccountPtr& account, const QUrl& url, bool redirected)
+{
+    constexpr qint64 maxSkinBytes = 128 * 1024;
+    QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
+    if (!redirected) {
+        // Revalidate the nickname URL. Redirects from this URL can point at an older skin.
+        request.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork);
+        request.setRawHeader("Cache-Control", "no-cache");
+    }
+    request.setHeader(QNetworkRequest::UserAgentHeader, m_elySkinUserAgent);
+    request.setTransferTimeout(15000);
+    auto* reply = m_elySkinNetwork->get(request);
+    reply->setParent(this);
+    reply->setReadBufferSize(maxSkinBytes + 1);
+
+    connect(reply, &QNetworkReply::readyRead, this, [reply] {
+        if (reply->bytesAvailable() > maxSkinBytes)
+            reply->abort();
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, account, redirected] {
+        reply->deleteLater();
+        if (!m_accounts.contains(account)) {
+            m_elySkinRequests.remove(account);
+            return;
+        }
+
+        const auto redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
+        auto target = reply->url().resolved(redirect.toUrl());
+        // Ely.by may return HTTP links to its PNG storage. Fetch the same file over HTTPS.
+        if (!redirected && redirect.isValid() && (target.scheme() == "http" || target.scheme() == "https") &&
+            target.host() == "ely.by" && target.userInfo().isEmpty() && target.port(-1) == -1 &&
+            target.path().startsWith("/storage/skins/")) {
+            target.setScheme("https");
+            downloadElySkin(account, target, true);
+            return;
+        }
+
+        const bool manual = m_elySkinRequests.take(account);
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        auto result = ElySkinResult::Failed;
+        if (status == 404) {
+            result = ElySkinResult::NotFound;
+        } else if (reply->error() == QNetworkReply::NoError && status == 200 && account->setOfflineSkin(reply->readAll())) {
+            result = ElySkinResult::Success;
+        }
+        if (manual)
+            emit elySkinRefreshFinished(account, result);
+    });
+}
 
 int AccountList::findAccountByProfileId(const QString& profileId) const
 {

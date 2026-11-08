@@ -39,10 +39,13 @@
 #include "minecraft/auth/AuthFlow.h"
 
 #include <QAbstractListModel>
+#include <QHash>
 #include <QObject>
 #include <QSet>
 #include <QSharedPointer>
 #include <QVariant>
+
+class QNetworkAccessManager;
 
 /*!
  * List of available Mojang accounts.
@@ -87,6 +90,10 @@ class AccountList : public QAbstractListModel {
     // queuing a refresh will let it go to the back of the queue (unless it's somewhere inside the queue already)
     void queueRefresh(QString accountId);
 
+    enum class ElySkinResult { Success, InvalidNickname, NotFound, Failed };
+    void startElySkinRefresh(QNetworkAccessManager* network, const QString& userAgent);
+    void refreshElySkin(const MinecraftAccountPtr& account, bool manual = true);
+
     /*!
      * Sets the path to load/save the list file from/to.
      * If autosave is true, this list will automatically save to the given path whenever it changes.
@@ -117,6 +124,7 @@ class AccountList : public QAbstractListModel {
     void listActivityChanged();
     void defaultAccountChanged();
     void activityChanged(bool active);
+    void elySkinRefreshFinished(const MinecraftAccountPtr& account, ElySkinResult result);
 
    public slots:
     /**
@@ -139,6 +147,12 @@ class AccountList : public QAbstractListModel {
 
     void authSucceeded();
     void authFailed(QString reason);
+
+   private:
+    void downloadElySkin(const MinecraftAccountPtr& account, const QUrl& url, bool redirected = false);
+    QNetworkAccessManager* m_elySkinNetwork = nullptr;
+    QString m_elySkinUserAgent;
+    QHash<MinecraftAccountPtr, bool> m_elySkinRequests;
 
    protected:
     QList<QString> m_refreshQueue;

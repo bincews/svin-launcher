@@ -2,12 +2,55 @@
 #include <QTemporaryDir>
 #include <QBuffer>
 #include <QImage>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QSignalSpy>
 #include <QTest>
+#include <QTimer>
 
 #include "LaunchController.h"
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/auth/AuthSession.h"
 #include "minecraft/auth/MinecraftAccount.h"
+
+class SkinReply : public QNetworkReply {
+   public:
+    SkinReply(const QNetworkRequest& request, const QByteArray& png, QObject* parent) : QNetworkReply(parent)
+    {
+        setUrl(request.url());
+        setAttribute(QNetworkRequest::HttpStatusCodeAttribute, 200);
+        m_png.setData(png);
+        m_png.open(QIODevice::ReadOnly);
+        open(QIODevice::ReadOnly);
+        QTimer::singleShot(0, this, [this] {
+            setFinished(true);
+            emit readyRead();
+            emit finished();
+        });
+    }
+
+    void abort() override {}
+    qint64 bytesAvailable() const override { return m_png.bytesAvailable() + QNetworkReply::bytesAvailable(); }
+
+   protected:
+    qint64 readData(char* data, qint64 size) override { return m_png.read(data, size); }
+
+   private:
+    QBuffer m_png;
+};
+
+class SkinNetwork : public QNetworkAccessManager {
+   public:
+    QByteArray png;
+    QList<QNetworkRequest> requests;
+
+   protected:
+    QNetworkReply* createRequest(Operation, const QNetworkRequest& request, QIODevice*) override
+    {
+        requests.append(request);
+        return new SkinReply(request, png, this);
+    }
+};
 
 class OfflineAccountTest : public QObject {
     Q_OBJECT
@@ -135,14 +178,49 @@ class OfflineAccountTest : public QObject {
         QBuffer buffer(&png);
         QVERIFY(buffer.open(QIODevice::WriteOnly));
         QVERIFY(image.save(&buffer, "PNG"));
+        QSignalSpy changed(offline.get(), &MinecraftAccount::changed);
+        QVERIFY(!offline->hasOfflineSkin());
         QVERIFY(offline->setOfflineSkin(png));
+        QVERIFY(offline->hasOfflineSkin());
+        QVERIFY(offline->setOfflineSkin(png));
+        QCOMPARE(changed.size(), 1);
         QVERIFY(!offline->setOfflineSkin("broken skin"));
         QVERIFY(!MinecraftAccount::createBlankMSA()->setOfflineSkin(png));
 
         const auto restored = MinecraftAccount::loadFromJsonV3(offline->saveToJson());
         QVERIFY(restored);
+        QVERIFY(restored->hasOfflineSkin());
         QCOMPARE(restored->accountData()->minecraftProfile.skin.data, png);
         QCOMPARE(restored->profileId(), offline->profileId());
+    }
+
+    void refreshesCachedElyAvatarAtStartup()
+    {
+        QImage image(64, 64, QImage::Format_ARGB32);
+        image.fill(Qt::blue);
+        QByteArray previousPng;
+        QBuffer previous(&previousPng);
+        QVERIFY(previous.open(QIODevice::WriteOnly));
+        QVERIFY(image.save(&previous, "PNG"));
+        auto offline = MinecraftAccount::createOffline("LocalPlayer");
+        QVERIFY(offline->setOfflineSkin(previousPng));
+
+        SkinNetwork network;
+        image.fill(Qt::green);
+        QBuffer updated(&network.png);
+        QVERIFY(updated.open(QIODevice::WriteOnly));
+        QVERIFY(image.save(&updated, "PNG"));
+
+        AccountList accounts;
+        accounts.addAccount(offline);
+        accounts.addAccount(MinecraftAccount::createOffline("NoElyAvatar"));
+        QSignalSpy changed(&accounts, &AccountList::dataChanged);
+        accounts.startElySkinRefresh(&network, "Svin test");
+        QTRY_COMPARE(offline->accountData()->minecraftProfile.skin.data, network.png);
+        QCOMPARE(changed.size(), 1);
+        QCOMPARE(network.requests.size(), 1);
+        QCOMPARE(network.requests.first().url(), QUrl("https://skinsystem.ely.by/skins/LocalPlayer.png"));
+        QCOMPARE(network.requests.first().rawHeader("Cache-Control"), QByteArray("no-cache"));
     }
 };
 

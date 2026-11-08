@@ -42,9 +42,6 @@
 #include "ui/pages/BasePage.h"
 
 #include "minecraft/auth/AccountList.h"
-#include <QPointer>
-
-class QNetworkReply;
 
 namespace Ui {
 class AccountListPage;
@@ -92,8 +89,6 @@ class AccountListPage : public QMainWindow, public BasePage {
     void ShowContextMenu(const QPoint& pos);
 
    private:
-    void downloadElySkin(const MinecraftAccountPtr& account, const QUrl& url, bool redirected = false);
-    QPointer<QNetworkReply> m_elySkinReply;
     void changeEvent(QEvent* event) override;
     QMenu* createPopupMenu() override;
     AccountList* m_accounts;

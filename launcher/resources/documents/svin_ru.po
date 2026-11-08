@@ -127,8 +127,8 @@ msgid "What name would you like to use in the game?"
 msgstr "Какой ник использовать в игре?"
 
 msgctxt "AccountListPage"
-msgid "Load Ely.by avatar"
-msgstr "Загрузить аватар Ely.by"
+msgid "Refresh Ely.by avatar"
+msgstr "Обновить аватар Ely.by"
 
 msgctxt "AccountListPage"
 msgid "Load the launcher avatar by nickname."
