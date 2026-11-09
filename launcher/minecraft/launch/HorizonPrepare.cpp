@@ -2,13 +2,94 @@
 
 #include "HorizonPrepare.h"
 
+#include <algorithm>
+#include <sstream>
+
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 
 #include "FileSystem.h"
+#include "io/stream_reader.h"
+#include "io/stream_writer.h"
 #include "launch/LaunchTask.h"
+#include "tag_compound.h"
+#include "tag_list.h"
+#include "tag_string.h"
+
+namespace {
+constexpr auto officialAddress = "play.playhorizon.dev";
+constexpr auto partnerAddress = "afri-network.co.za";
+
+bool isPresetServer(const nbt::value& entry)
+{
+    const auto& server = entry.as<nbt::tag_compound>();
+    if (!server.has_key("name", nbt::tag_type::String) || !server.has_key("ip", nbt::tag_type::String))
+        return false;
+
+    const auto& name = server.at("name").as<nbt::tag_string>().get();
+    auto address = QByteArray::fromStdString(server.at("ip").as<nbt::tag_string>().get()).trimmed().toLower();
+    if (address.endsWith(":25565"))
+        address.chop(6);
+
+    return (name == "Horizon Official" && (address == officialAddress || address == "horizon.bunchy7s.dev")) ||
+           (name == "Afri-Network (South Africa)" && address == partnerAddress);
+}
+
+Result<> removePresetServers(const QString& path)
+{
+    if (!QFile::exists(path))
+        return {};
+
+    const auto contents = FS::read(path);
+    if (!contents)
+        return std::unexpected(contents.error());
+
+    try {
+        std::istringstream input(contents->toStdString());
+        auto [name, data] = nbt::io::read_compound(input);
+        if (!data || !data->has_key("servers", nbt::tag_type::List))
+            return {};
+
+        auto& servers = data->at("servers").as<nbt::tag_list>();
+        if (servers.el_type() != nbt::tag_type::Compound)
+            return {};
+
+        const auto kept = std::distance(servers.begin(), std::remove_if(servers.begin(), servers.end(), isPresetServer));
+        if (static_cast<size_t>(kept) == servers.size())
+            return {};
+
+        while (servers.size() > static_cast<size_t>(kept))
+            servers.pop_back();
+
+        std::ostringstream output;
+        nbt::io::write_tag(name, *data, output);
+        return FS::write(path, QByteArray::fromStdString(output.str()));
+    } catch (const std::exception&) {
+        return std::unexpected(QStringLiteral("Could not read the Horizon server list."));
+    }
+}
+
+Result<> markServerOffered(const QDir& game, const QString& marker, const QByteArray& address)
+{
+    const auto path = game.filePath(marker);
+    QByteArray data;
+    if (QFile::exists(path)) {
+        const auto saved = FS::read(path);
+        if (!saved)
+            return std::unexpected(saved.error());
+        data = *saved;
+    }
+    for (const auto& line : data.split('\n')) {
+        if (line.trimmed().compare(address, Qt::CaseInsensitive) == 0)
+            return {};
+    }
+    if (!data.isEmpty() && !data.endsWith('\n'))
+        data += '\n';
+    return FS::write(path, data + address + '\n');
+}
+}  // namespace
 
 QDir HorizonPrepare::directory()
 {
@@ -122,6 +203,16 @@ void HorizonPrepare::finished(int code, QProcess::ExitStatus status)
     } else if (m_phase == Phase::Bootstrap) {
         checkResources();
     } else {
+        // Horizon uses these markers to remember which bundled entries were already offered.
+        const QDir game(m_parent->instance()->gameRoot());
+        const auto official = FS::write(game.filePath("horizon_official_server.txt"), QByteArray(officialAddress) + '\n');
+        const auto partner = markServerOffered(game, "horizon_partner_servers.txt", partnerAddress);
+        if (!official || !partner) {
+            emitFailed(!official ? official.error() : partner.error());
+            return;
+        }
+        if (const auto cleanup = removePresetServers(game.filePath("servers.dat")); !cleanup)
+            emit logLine(cleanup.error(), MessageLevel::Warning);
         emitSucceeded();
     }
 }
