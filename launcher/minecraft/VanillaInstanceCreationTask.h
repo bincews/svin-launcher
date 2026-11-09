@@ -8,7 +8,7 @@
 class VanillaCreationTask final : public InstanceTask {
     Q_OBJECT
    public:
-    explicit VanillaCreationTask(BaseVersion::Ptr version) : m_version(std::move(version)) {}
+    explicit VanillaCreationTask(BaseVersion::Ptr version, bool horizon = false) : m_version(std::move(version)), m_horizon(horizon) {}
     VanillaCreationTask(BaseVersion::Ptr version, QString loader, BaseVersion::Ptr loaderVersion);
 
     void executeTask() override;
@@ -20,6 +20,7 @@ class VanillaCreationTask final : public InstanceTask {
     BaseVersion::Ptr m_version;
 
     bool m_usingLoader = false;
+    bool m_horizon = false;
     QString m_loader;
     BaseVersion::Ptr m_loaderVersion;
 };

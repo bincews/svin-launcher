@@ -85,6 +85,7 @@ class CustomPage : public QWidget, public BasePage {
     Ui::CustomPage* m_ui = nullptr;
     bool m_versionSetByUser = false;
     BaseVersion::Ptr m_selectedVersion;
+    BaseVersion::Ptr m_horizonVersion;
     BaseVersion::Ptr m_selectedLoaderVersion;
     QString m_selectedLoader;
 };

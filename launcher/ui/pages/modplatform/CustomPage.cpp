@@ -47,6 +47,15 @@
 #include "minecraft/VanillaInstanceCreationTask.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 
+namespace {
+class HorizonVersion final : public BaseVersion {
+   public:
+    QString descriptor() const override { return "horizon-26.3"; }
+    QString name() const override { return QStringLiteral("26.3 — Horizon (Rust)"); }
+    QString typeString() const override { return "experiment"; }
+};
+}
+
 CustomPage::CustomPage(NewInstanceDialog* dialog, QWidget* parent) : QWidget(parent), m_dialog(dialog), m_ui(new Ui::CustomPage)
 {
     m_ui->setupUi(this);
@@ -71,6 +80,10 @@ CustomPage::CustomPage(NewInstanceDialog* dialog, QWidget* parent) : QWidget(par
 void CustomPage::openedImpl()
 {
     if (!m_initialized) {
+#if defined(Q_OS_WIN) && defined(Q_PROCESSOR_X86_64)
+        m_horizonVersion = std::make_shared<HorizonVersion>();
+        m_ui->versionList->setAdditionalVersion(m_horizonVersion);
+#endif
         auto vlist = APPLICATION->metadataIndex()->get("net.minecraft");
         m_ui->versionList->initialize(vlist.get());
         m_initialized = true;
@@ -110,12 +123,14 @@ void CustomPage::filterChanged()
     if (m_ui->experimentsFilter->isChecked()) {
         out << "(experiment)";
     }
-    auto regexp = out.join('|');
+    auto regexp = out.isEmpty() ? QStringLiteral("(?!)") : out.join('|');
     m_ui->versionList->setFilter(BaseVersionList::TypeRole, Filters::regexp(QRegularExpression(regexp)));
 }
 
 void CustomPage::loaderFilterChanged()
 {
+    if (m_horizonVersion && m_selectedVersion == m_horizonVersion)
+        return;
     QString minecraftVersion;
     if (m_selectedVersion) {
         minecraftVersion = m_selectedVersion->descriptor();
@@ -226,7 +241,9 @@ void CustomPage::suggestCurrent()
     }
 
     // There isn't a selected version if the version list is empty
-    if (m_ui->loaderVersionList->selectedVersion() == nullptr) {
+    if (m_selectedVersion == m_horizonVersion) {
+        m_dialog->setSuggestedPack(m_selectedVersion->name(), new VanillaCreationTask(m_selectedVersion, true));
+    } else if (m_ui->loaderVersionList->selectedVersion() == nullptr) {
         m_dialog->setSuggestedPack(m_selectedVersion->descriptor(), new VanillaCreationTask(m_selectedVersion));
     } else {
         QString suggestedName = QString("%1 %2").arg(m_selectedVersion->descriptor(), selectedLoaderName());
@@ -238,6 +255,9 @@ void CustomPage::suggestCurrent()
 void CustomPage::setSelectedVersion(BaseVersion::Ptr version)
 {
     m_selectedVersion = std::move(version);
+    const bool horizon = m_horizonVersion && m_selectedVersion == m_horizonVersion;
+    m_ui->line->setVisible(!horizon);
+    m_ui->loaderPanel->setVisible(!horizon);
     suggestCurrent();
     loaderFilterChanged();
 }

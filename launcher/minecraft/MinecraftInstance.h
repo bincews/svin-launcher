@@ -101,6 +101,7 @@ class MinecraftInstance : public BaseInstance {
 
     /** Returns whether the instance, with its version, has support for demo mode. */
     bool supportsDemo() const;
+    bool isHorizon() const;
 
     void updateRuntimeContext() override;
 

@@ -57,6 +57,7 @@
 
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/launch/AutoInstallJava.h"
+#include "minecraft/launch/HorizonPrepare.h"
 #include "minecraft/launch/ClaimAccount.h"
 #include "minecraft/launch/CreateGameFolders.h"
 #include "minecraft/launch/EnsureAvailableMemory.h"
@@ -170,6 +171,7 @@ class OrSetting : public Setting {
 MinecraftInstance::MinecraftInstance(SettingsObject* globalSettings, std::unique_ptr<SettingsObject> settings, const QString& rootDir)
     : BaseInstance(globalSettings, std::move(settings), rootDir)
 {
+    m_settings->registerSetting("Horizon", false);
     m_components.reset(new PackProfile(this));
 }
 
@@ -397,6 +399,8 @@ QString MinecraftInstance::getLocalLibraryPath() const
 
 bool MinecraftInstance::supportsDemo() const
 {
+    if (isHorizon())
+        return false;
     Version instance_ver{ getPackProfile()->getComponentVersion("net.minecraft") };
     // Demo mode was introduced in 1.3.1: https://minecraft.wiki/w/Demo_mode#History
     // FIXME: Due to Version constraints atm, this can't handle well non-release versions
@@ -1143,6 +1147,11 @@ QList<LaunchStep::Ptr> MinecraftInstance::createUpdateTask()
     };
 }
 
+bool MinecraftInstance::isHorizon() const
+{
+    return m_settings->get("Horizon").toBool();
+}
+
 LaunchTask* MinecraftInstance::createLaunchTask(AuthSessionPtr session, MinecraftTarget::Ptr targetToJoin)
 {
     updateRuntimeContext();
@@ -1211,7 +1220,8 @@ LaunchTask* MinecraftInstance::createLaunchTask(AuthSessionPtr session, Minecraf
 
     // Downloading game files is independent of local account authentication.
     if (session->canDownloadGameFiles()) {
-        process->appendStep(makeShared<ClaimAccount>(pptr, session));
+        if (!isHorizon())
+            process->appendStep(makeShared<ClaimAccount>(pptr, session));
         for (auto t : createUpdateTask()) {
             process->appendStep(makeShared<TaskStepWrapper>(pptr, t));
         }
@@ -1219,33 +1229,14 @@ LaunchTask* MinecraftInstance::createLaunchTask(AuthSessionPtr session, Minecraf
         process->appendStep(makeShared<EnsureOfflineLibraries>(pptr, this));
     }
 
-    // if there are any jar mods
-    {
+    if (isHorizon()) {
+        process->appendStep(makeShared<HorizonPrepare>(pptr, session->canDownloadGameFiles()));
+    } else {
         process->appendStep(makeShared<ModMinecraftJar>(pptr));
-    }
-
-    // Scan mods folders for mods
-    {
         process->appendStep(makeShared<ScanModFolders>(pptr));
-    }
-
-    // make sure we have enough RAM, warn the user if we don't
-    {
         process->appendStep(makeShared<EnsureAvailableMemory>(pptr, this));
-    }
-
-    // print some instance info here...
-    {
         process->appendStep(makeShared<PrintInstanceInfo>(pptr, session, targetToJoin));
-    }
-
-    // extract native jars if needed
-    {
         process->appendStep(makeShared<ExtractNatives>(pptr));
-    }
-
-    // reconstruct assets if needed
-    {
         process->appendStep(makeShared<ReconstructAssets>(pptr));
     }
 

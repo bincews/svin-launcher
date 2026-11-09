@@ -43,6 +43,7 @@ class LauncherPartLaunch : public LaunchStep {
    private:
     enum class SkinMode { Disabled, Authlib, Legacy };
     void startGame(QStringList classPath, SkinMode skins);
+    void startProcess(const QString& executable, QStringList args);
 
     LoggedProcess m_process;
     Net::Request::Ptr m_elyDownload;

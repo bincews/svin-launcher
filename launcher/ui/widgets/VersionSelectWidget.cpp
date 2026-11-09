@@ -122,6 +122,11 @@ void VersionSelectWidget::initialize(BaseVersionList* vlist, bool forceLoad)
     }
 }
 
+void VersionSelectWidget::setAdditionalVersion(BaseVersion::Ptr version)
+{
+    m_proxyModel->setAdditionalVersion(std::move(version));
+}
+
 void VersionSelectWidget::closeEvent(QCloseEvent* event)
 {
     QWidget::closeEvent(event);

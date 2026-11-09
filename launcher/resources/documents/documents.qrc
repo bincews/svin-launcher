@@ -4,6 +4,7 @@
         <file>../../../COPYING.md</file>
     <file>credits.html</file>
         <file>svin_ru.po</file>
+        <file>HorizonBootstrap.java</file>
     </qresource>
 </RCC>
 

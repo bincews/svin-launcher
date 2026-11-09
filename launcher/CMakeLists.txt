@@ -256,6 +256,8 @@ set(MINECRAFT_SOURCES
     minecraft/launch/ElyAuthlibPatches.h
     minecraft/launch/LauncherPartLaunch.cpp
     minecraft/launch/LauncherPartLaunch.h
+    minecraft/launch/HorizonPrepare.cpp
+    minecraft/launch/HorizonPrepare.h
     minecraft/launch/MinecraftTarget.cpp
     minecraft/launch/MinecraftTarget.h
     minecraft/launch/PrintInstanceInfo.cpp

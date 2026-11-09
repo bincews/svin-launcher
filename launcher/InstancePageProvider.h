@@ -28,13 +28,15 @@ class InstancePageProvider : protected QObject, public BasePageProvider {
     {
         QList<BasePage*> values;
         values.append(new LogPage(inst));
-        values.append(new VersionPage(inst));
-        values.append(ManagedPackPage::createPage(inst));
-        auto modsPage = new ModFolderPage(inst, inst->loaderModList());
-        modsPage->setFilter("%1 (*.zip *.jar *.litemod *.nilmod)");
-        values.append(modsPage);
-        values.append(new CoreModFolderPage(inst, inst->coreModList()));
-        values.append(new NilModFolderPage(inst, inst->nilModList()));
+        if (!inst->isHorizon()) {
+            values.append(new VersionPage(inst));
+            values.append(ManagedPackPage::createPage(inst));
+            auto modsPage = new ModFolderPage(inst, inst->loaderModList());
+            modsPage->setFilter("%1 (*.zip *.jar *.litemod *.nilmod)");
+            values.append(modsPage);
+            values.append(new CoreModFolderPage(inst, inst->coreModList()));
+            values.append(new NilModFolderPage(inst, inst->nilModList()));
+        }
         values.append(new ResourcePackPage(inst, inst->resourcePackList()));
         values.append(new GlobalDataPackPage(inst));
         values.append(new TexturePackPage(inst, inst->texturePackList()));

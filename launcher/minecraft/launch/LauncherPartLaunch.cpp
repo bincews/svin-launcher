@@ -36,6 +36,7 @@
 #include "LauncherPartLaunch.h"
 
 #include "ElyAuthlibPatches.h"
+#include "HorizonPrepare.h"
 
 #include <QCryptographicHash>
 #include <QDir>
@@ -76,6 +77,27 @@ LauncherPartLaunch::LauncherPartLaunch(LaunchTask* parent)
 
 void LauncherPartLaunch::executeTask()
 {
+    if (auto* instance = m_parent->instance(); instance->isHorizon()) {
+        const auto horizon = HorizonPrepare::directory();
+        QStringList args = { "--resources", horizon.filePath("resources"), "--game-dir", instance->gameRoot(),
+                             "--home", instance->gameRoot(), "--name", m_session->player_name };
+        if (!instance->settings()->get("LaunchMaximized").toBool()) {
+            args << "--width" << instance->settings()->get("MinecraftWinWidth").toString()
+                 << "--height" << instance->settings()->get("MinecraftWinHeight").toString();
+        }
+        if (m_targetToJoin && !m_targetToJoin->world.isEmpty()) {
+            args << "--quickPlaySingleplayer" << m_targetToJoin->world;
+        } else if (m_targetToJoin && !m_targetToJoin->address.isEmpty()) {
+            auto address = m_targetToJoin->address;
+            if (address.contains(':') && !address.startsWith('['))
+                address = '[' + address + ']';
+            args << "--quickPlayMultiplayer" << QStringLiteral("%1:%2").arg(address).arg(m_targetToJoin->port);
+        }
+        m_process.setProcessEnvironment(instance->createLaunchEnvironment());
+        m_process.setDetachable(true);
+        startProcess(horizon.filePath("client/horizon-client.exe"), std::move(args));
+        return;
+    }
     auto classPath = m_parent->instance()->getClassPath();
     if (!m_session || m_session->user_type != "offline" || !APPLICATION->settings()->get("ElyByGameSkins").toBool()) {
         startGame(std::move(classPath), SkinMode::Disabled);
@@ -198,7 +220,21 @@ void LauncherPartLaunch::startGame(QStringList classPath, SkinMode skins)
 
     qDebug() << args.join(' ');
 
-    QString wrapperCommandStr = instance->getWrapperCommand().trimmed();
+    startProcess(javaPath, std::move(args));
+
+#if defined(Q_OS_LINUX) && defined(ENABLE_GAMEMODE)
+    if (instance->settings()->get("EnableFeralGamemode").toBool() && APPLICATION->capabilities() & Application::SupportsGameMode) {
+        auto pid = m_process.processId();
+        if (pid != 0) {
+            gamemode_request_start_for(static_cast<pid_t>(pid));
+        }
+    }
+#endif
+}
+
+void LauncherPartLaunch::startProcess(const QString& executable, QStringList args)
+{
+    QString wrapperCommandStr = m_parent->instance()->getWrapperCommand().trimmed();
     if (!wrapperCommandStr.isEmpty()) {
         auto wrapperArgs = m_parent->substituteVariables(wrapperCommandStr);
         auto wrapperCommand = wrapperArgs.takeFirst();
@@ -210,20 +246,11 @@ void LauncherPartLaunch::startGame(QStringList classPath, SkinMode skins)
             return;
         }
         emit logLine("Wrapper command is:\n" + wrapperCommandStr + "\n\n", MessageLevel::Launcher);
-        args.prepend(javaPath);
+        args.prepend(executable);
         m_process.start(wrapperCommand, wrapperArgs + args);
     } else {
-        m_process.start(javaPath, args);
+        m_process.start(executable, args);
     }
-
-#if defined(Q_OS_LINUX) && defined(ENABLE_GAMEMODE)
-    if (instance->settings()->get("EnableFeralGamemode").toBool() && APPLICATION->capabilities() & Application::SupportsGameMode) {
-        auto pid = m_process.processId();
-        if (pid != 0) {
-            gamemode_request_start_for(static_cast<pid_t>(pid));
-        }
-    }
-#endif
 }
 
 void LauncherPartLaunch::on_state(LoggedProcess::State state)
@@ -267,7 +294,8 @@ void LauncherPartLaunch::on_state(LoggedProcess::State state)
             emit logLine(QString("Minecraft process ID: %1\n\n").arg(m_process.processId()), MessageLevel::Launcher);
             m_parent->setPid(m_process.processId());
             // send the launch script to the launcher part
-            m_process.write(m_launchScript.toUtf8());
+            if (!m_parent->instance()->isHorizon())
+                m_process.write(m_launchScript.toUtf8());
 
             mayProceed = true;
             emit readyForLaunch();
@@ -287,7 +315,8 @@ void LauncherPartLaunch::proceed()
     if (mayProceed) {
         m_parent->instance()->setMinecraftRunning(true);
         QString launchString("launch\n");
-        m_process.write(launchString.toUtf8());
+        if (!m_parent->instance()->isHorizon())
+            m_process.write(launchString.toUtf8());
         mayProceed = false;
     }
 }
@@ -297,7 +326,7 @@ bool LauncherPartLaunch::abort()
     if (m_elyDownload && m_elyDownload->isRunning())
         return m_elyDownload->abort();
 
-    if (mayProceed) {
+    if (mayProceed && !m_parent->instance()->isHorizon()) {
         mayProceed = false;
         QString launchString("abort\n");
         m_process.write(launchString.toUtf8());

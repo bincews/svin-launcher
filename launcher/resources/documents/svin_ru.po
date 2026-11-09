@@ -182,6 +182,38 @@ msgctxt "AccountListPage"
 msgid "Could not load the skin from Ely.by."
 msgstr "Не удалось загрузить скин с Ely.by."
 
+msgctxt "HorizonPrepare"
+msgid "This experimental Horizon instance requires Windows x64."
+msgstr "Для экспериментальной сборки Horizon нужна Windows x64."
+
+msgctxt "HorizonPrepare"
+msgid "Start Horizon online once to download its files."
+msgstr "Для первого запуска Horizon нужно подключение к интернету."
+
+msgctxt "HorizonPrepare"
+msgid "Could not start Horizon preparation: %1"
+msgstr "Не удалось начать подготовку Horizon: %1"
+
+msgctxt "HorizonPrepare"
+msgid "Could not open the Horizon download helper."
+msgstr "Не удалось открыть скрипт загрузки Horizon."
+
+msgctxt "HorizonPrepare"
+msgid "Could not save the Horizon download helper."
+msgstr "Не удалось сохранить скрипт загрузки Horizon."
+
+msgctxt "HorizonPrepare"
+msgid "Downloading Horizon 26.3…"
+msgstr "Скачиваем Horizon 26.3…"
+
+msgctxt "HorizonPrepare"
+msgid "Preparing Horizon resources…"
+msgstr "Подготавливаем ресурсы Horizon…"
+
+msgctxt "HorizonPrepare"
+msgid "Horizon preparation failed (exit code %1)."
+msgstr "Не удалось подготовить Horizon (код %1)."
+
 msgctxt "ModFolderPage"
 msgid "Ely.by skins in Minecraft"
 msgstr "Скины Ely.by в Minecraft"

@@ -25,6 +25,7 @@ class VersionProxyModel : public QAbstractProxyModel {
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
     virtual QModelIndex parent(const QModelIndex& child) const override;
     virtual void setSourceModel(QAbstractItemModel* sourceModel) override;
+    void setAdditionalVersion(BaseVersion::Ptr version) { m_additionalVersion = std::move(version); }
 
     const FilterMap& filters() const;
     const QString& search() const;
@@ -56,4 +57,6 @@ class VersionProxyModel : public QAbstractProxyModel {
     bool hasRecommended = false;
     bool hasLatest = false;
     QString m_currentVersion;
+    BaseVersion::Ptr m_additionalVersion;
+    QAbstractItemModel* m_combinedSource = nullptr;
 };

@@ -66,6 +66,7 @@ InstanceWindow::InstanceWindow(MinecraftInstance* instance, QWidget* parent) : Q
     // Add page container
     {
         auto provider = std::make_shared<InstancePageProvider>(m_instance);
+        qDebug() << "Opening instance window for" << m_instance->id() << "Horizon:" << m_instance->isHorizon();
         m_container = new PageContainer(provider.get(), "console", this);
         m_container->setParentContainer(this);
         setCentralWidget(m_container);
@@ -74,7 +75,7 @@ InstanceWindow::InstanceWindow(MinecraftInstance* instance, QWidget* parent) : Q
 
     // Add custom buttons to the page container layout.
     {
-        auto horizontalLayout = new QHBoxLayout(this);
+        auto horizontalLayout = new QHBoxLayout;
         horizontalLayout->setObjectName(QStringLiteral("horizontalLayout"));
         horizontalLayout->setContentsMargins(0, 0, 6, 6);
 
@@ -145,7 +146,8 @@ InstanceWindow::InstanceWindow(MinecraftInstance* instance, QWidget* parent) : Q
 
     // add ourself as the modpack page's instance window
     {
-        static_cast<ManagedPackPage*>(m_container->getPage("managed_pack"))->setInstanceWindow(this);
+        if (auto* managedPack = static_cast<ManagedPackPage*>(m_container->getPage("managed_pack")))
+            managedPack->setInstanceWindow(this);
     }
 
     show();

@@ -22,7 +22,9 @@ void VanillaCreationTask::executeTask()
 
         auto* components = m_instance->getPackProfile();
         components->buildingFromScratch();
-        components->setComponentVersion("net.minecraft", m_version->descriptor(), true);
+        components->setComponentVersion("net.minecraft", m_horizon ? QStringLiteral("26.3") : m_version->descriptor(), true);
+        if (m_horizon)
+            m_instance->settings()->set("Horizon", true);
         if (m_usingLoader) {
             components->setComponentVersion(m_loader, m_loaderVersion->descriptor());
         }

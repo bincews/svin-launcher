@@ -1410,7 +1410,7 @@ void MainWindow::on_actionEditInstance_triggered()
         return;
 
     if (m_selectedInstance->canEdit()) {
-        APPLICATION->showInstanceWindow(m_selectedInstance);
+        APPLICATION->showInstanceWindow(m_selectedInstance, m_selectedInstance->isHorizon() ? QStringLiteral("settings") : QString{});
     } else {
         CustomMessageBox::selectable(this, tr("Instance not editable"),
                                      tr("This instance is not editable. It may be broken, invalid, or too old. Check logs for details."),

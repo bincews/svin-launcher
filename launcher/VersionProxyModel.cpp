@@ -37,9 +37,13 @@
 #include "VersionProxyModel.h"
 #include <Version.h>
 #include <meta/VersionList.h>
+#include <QConcatenateTablesProxyModel>
+#include <QDateTime>
 #include <QIcon>
 #include <QPixmapCache>
 #include <QSortFilterProxyModel>
+#include <QStandardItemModel>
+#include <utility>
 
 class VersionFilterModel : public QSortFilterProxyModel {
     Q_OBJECT
@@ -293,6 +297,7 @@ void VersionProxyModel::sourceDataChanged(const QModelIndex& source_top_left, co
 
 void VersionProxyModel::setSourceModel(QAbstractItemModel* replacingRaw)
 {
+    delete std::exchange(m_combinedSource, nullptr);
     auto replacing = dynamic_cast<BaseVersionList*>(replacingRaw);
 
     m_columns.clear();
@@ -339,7 +344,20 @@ void VersionProxyModel::setSourceModel(QAbstractItemModel* replacingRaw)
     if (roles.contains(BaseVersionList::LatestRole)) {
         hasLatest = true;
     }
-    filterModel->setSourceModel(replacing);
+    if (m_additionalVersion) {
+        auto* combined = new QConcatenateTablesProxyModel(this);
+        auto* extra = new QStandardItemModel(1, replacing->columnCount({}), combined);
+        const auto index = extra->index(0, 0);
+        extra->setData(index, m_additionalVersion->name(), BaseVersionList::VersionRole);
+        extra->setData(index, m_additionalVersion->descriptor(), BaseVersionList::VersionIdRole);
+        extra->setData(index, m_additionalVersion->typeString(), BaseVersionList::TypeRole);
+        extra->setData(index, QVariant::fromValue(m_additionalVersion), BaseVersionList::VersionPointerRole);
+        extra->setData(index, QDateTime::currentSecsSinceEpoch(), BaseVersionList::SortRole);
+        combined->addSourceModel(replacing);
+        combined->addSourceModel(extra);
+        m_combinedSource = combined;
+    }
+    filterModel->setSourceModel(m_combinedSource ? m_combinedSource : replacing);
 }
 
 QModelIndex VersionProxyModel::getRecommended() const

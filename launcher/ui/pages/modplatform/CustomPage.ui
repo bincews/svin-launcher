@@ -153,7 +153,12 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="loaderLayout">
+        <widget class="QWidget" name="loaderPanel">
+         <layout class="QHBoxLayout" name="loaderLayout">
+          <property name="leftMargin"><number>0</number></property>
+          <property name="topMargin"><number>0</number></property>
+          <property name="rightMargin"><number>0</number></property>
+          <property name="bottomMargin"><number>0</number></property>
          <item>
           <widget class="VersionSelectWidget" name="loaderVersionList" native="true">
            <property name="sizePolicy">
@@ -261,7 +266,8 @@
            </item>
           </layout>
          </item>
-        </layout>
+         </layout>
+        </widget>
        </item>
       </layout>
      </widget>
