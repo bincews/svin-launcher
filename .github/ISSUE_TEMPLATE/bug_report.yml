@@ -1,27 +1,27 @@
-name: Ошибка Svin Launcher
-description: Сообщить об ошибке
+name: Svin Launcher bug report
+description: Report a bug
 body:
   - type: input
     id: version
     attributes:
-      label: Версия Svin Launcher
+      label: Svin Launcher version
     validations:
       required: true
   - type: input
     id: system
     attributes:
-      label: Версия Windows
+      label: Windows version
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Как повторить ошибку
-      description: Что произошло и как это повторить?
+      label: Steps to reproduce
+      description: What happened, and how can we reproduce it?
     validations:
       required: true
   - type: textarea
     id: log
     attributes:
-      label: Сообщение об ошибке или журнал запуска
+      label: Error message or launch log
       render: text

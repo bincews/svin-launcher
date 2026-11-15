@@ -1,9 +1,11 @@
-# Иконка
+# Icon source
 
-Морда свиньи из Minecraft Java Edition 1.21.10:
+English · [Русский](SVIN-BRANDING.ru.md)
+
+The icon uses the pig's face from Minecraft Java Edition 1.21.10,
 `assets/minecraft/textures/entity/pig/temperate_pig.png`.
 
-Лицевая сторона головы: (8,8,8,8). Пятачок: (17,17,4,3), позиция на голове (2,4).
-PNG увеличен без сглаживания; ICO содержит размеры 16–256 пикселей.
+The head's front face is at (8, 8, 8, 8). The snout is at (17, 17, 4, 3), placed at (2, 4) on the head.
+The PNG was enlarged without smoothing. The ICO contains sizes from 16 to 256 pixels.
 
-Изображение принадлежит Mojang/Microsoft и не входит в лицензию исходников лаунчера.
+The image belongs to Mojang/Microsoft and is outside the launcher's source-code license.

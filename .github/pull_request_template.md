@@ -1,3 +1,3 @@
-## Изменения
+## Changes
 
-## Проверка
+## Verification

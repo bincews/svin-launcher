@@ -1,19 +1,21 @@
-# Сборка Windows x64
+# Building for Windows x64
 
-Проверенное окружение: MSVC 19.44, Qt 6.11.2 MSVC x64, CMake 3.31.6,
-Ninja 1.12.1, JDK 17 и Windows SDK. Модули Qt: NetworkAuth, SVG, ImageFormats.
+English · [Русский](BUILDING.ru.md)
 
-## Локально
+The verified environment uses MSVC 19.44, Qt 6.11.2 MSVC x64, CMake 3.31.6,
+Ninja 1.12.1, JDK 17, and the Windows SDK. Required Qt modules include NetworkAuth, SVG, and ImageFormats.
 
-В Developer PowerShell for VS 2022 (x64):
+## Local build
+
+Open Developer PowerShell for VS 2022 (x64) and clone the repository.
 
 ```powershell
 git clone --recurse-submodules https://github.com/bincews/svin-launcher.git
 cd svin-launcher
 ```
 
-`JAVA_HOME` — каталог JDK 17; `CMAKE_PREFIX_PATH` — каталог Qt MSVC x64.
-CMake и Ninja должны быть в PATH.
+Set `JAVA_HOME` to the JDK 17 directory and `CMAKE_PREFIX_PATH` to the Qt MSVC x64 directory.
+CMake and Ninja must be on `PATH`.
 
 ```powershell
 cmake --preset default -DVCPKG_HOST_TRIPLET=x64-windows -DVCPKG_TARGET_TRIPLET=x64-windows -DLauncher_BUILD_PLATFORM=svin-local-windows-x64
@@ -23,39 +25,38 @@ cmake --install build --config Release
 cmake --install build --config Release --component portable
 ```
 
-Для r8 добавь `-DLauncher_SVIN_RELEASE=8` к команде настройки CMake.
-Если нужен отдельный номер ревизии, добавь `-DLauncher_SVIN_REVISION=1`.
-Для нового релиза rN укажи номер релиза и ревизию 0.
-Архив `Svin-Launcher-Windows-x64-rN.zip` или `Svin-Launcher-Windows-x64-rN.M.zip`
-для ревизии M должен содержать папку
-`Svin-Launcher-Windows-x64` с файлами установки, включая `svinlauncher_updater.exe`.
-Архивы всех ревизий прикрепляются к одному релизу с тегом `svin-rN`.
+For r9, add `-DLauncher_SVIN_RELEASE=9` to the CMake configure command.
+To set a separate revision number, add `-DLauncher_SVIN_REVISION=1`.
+For a new release rN, set its release number and revision 0.
+The archive `Svin-Launcher-Windows-x64-rN.zip`, or `Svin-Launcher-Windows-x64-rN.M.zip` for revision M,
+must contain a `Svin-Launcher-Windows-x64` folder holding the installation files, including `svinlauncher_updater.exe`.
+Attach all revisions of a release to the same GitHub release tagged `svin-rN`.
 
-Перед упаковкой релизной сборки запусти в Python 3.11 или новее
-`python scripts/stamp-svin-package.py install` после добавления всех файлов в
-папку установки. Скрипт запишет идентификатор сборки в `portable.txt` и выведет
-метку для архива на GitHub. При замене архива с тем же номером вычисли метку
-заново и укажи её в поле Label у загруженного ZIP. После установки через
-обновлятор Svin запоминает также контрольную сумму скачанного архива.
+Before archiving a release, use Python 3.11 or newer to run
+`python scripts/stamp-svin-package.py install` after adding all files to the installation folder.
+The script writes a build identifier to `portable.txt` and prints the label to use for the GitHub archive asset.
+When replacing an archive with the same version number, regenerate the label and set the uploaded ZIP asset's **Label** field to it.
+After installing through the updater, Svin also records the downloaded archive's checksum.
 
-Результат — `install/svinlauncher.exe` и зависимости рядом с ним.
-Для переносной сборки нужны DLL из
-`VC/Redist/MSVC/<версия>/x64/Microsoft.VC143.CRT` установленной Visual Studio.
+The output is `install/svinlauncher.exe` with its dependencies alongside it.
+Portable packages also need the DLLs from the installed Visual Studio's
+`VC/Redist/MSVC/<version>/x64/Microsoft.VC143.CRT` directory.
 
-Из общего прогона исключён FileSystem: тесты символических ссылок требуют
-повышенных прав.
+FileSystem is excluded from the general test command because its symbolic-link tests require elevated permissions.
 
 ## GitHub Actions
 
-**Actions → Build Svin Launcher for Windows → Run workflow**.
-Артефакт: `Svin-Launcher-Windows-x64-portable`.
-Этот способ сборки ещё не проверен на GitHub.
+Open **Actions → Build Svin Launcher for Windows → Run workflow**.
+The artifact is named `Svin-Launcher-Windows-x64-portable`.
+This build method has not yet been verified on GitHub.
 
-## Ключи сервисов
+<a id="ключи-сервисов"></a>
 
-| Сервис | Локальный параметр CMake | Настройка GitHub |
+## Service keys
+
+| Service | Local CMake option | GitHub setting |
 | --- | --- | --- |
 | CurseForge | `Launcher_CURSEFORGE_API_KEY` | Secret `LOCAL_CURSEFORGE_API_KEY` |
 | Microsoft | `Launcher_MSA_CLIENT_ID` | Variable `LOCAL_MSA_CLIENT_ID` |
 
-По умолчанию оба значения пустые.
+Both values are empty by default.
