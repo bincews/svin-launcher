@@ -15,6 +15,7 @@
 
 #include "Index.h"
 
+#include <QFileInfo>
 #include "Application.h"
 #include "JsonFormat.h"
 #include "QObjectPtr.h"
@@ -138,18 +139,22 @@ void Index::connectVersionList(const int row, const VersionList::Ptr& list)
 
 Task::Ptr Index::loadVersion(const QString& uid, const QString& version, Net::Mode mode, bool force)
 {
-    if (mode == Net::Mode::Offline || !APPLICATION->settings()->get("MetaRefreshOnLaunch").toBool()) {
+    if (mode == Net::Mode::Offline) {
         return get(uid, version)->loadTask(mode);
+    }
+    if (!force && !APPLICATION->settings()->get("MetaRefreshOnLaunch").toBool() &&
+        QFileInfo::exists(QDir("meta").filePath(get(uid, version)->localFilename()))) {
+        return get(uid, version)->loadTask(Net::Mode::Offline);
     }
 
     auto versionList = get(uid);
     auto loadTask =
         makeShared<SequentialTask>(tr("Load meta for %1:%2", "This is for the task name that loads the meta index.").arg(uid, version));
-    if (status() != BaseEntity::LoadStatus::Remote || force) {
-        loadTask->addTask(this->loadTask(mode));
-    }
-    loadTask->addTask(versionList->loadTask(mode));
-    loadTask->addTask(versionList->getVersion(version)->loadTask(mode));
+    // New metadata may have been published since this launcher's first index request.
+    // Refresh the root before validating descendants against its checksums.
+    loadTask->addTask(this->loadTask(mode, true));
+    loadTask->addTask(versionList->loadTask(mode, force));
+    loadTask->addTask(versionList->getVersion(version)->loadTask(mode, force));
     return loadTask;
 }
 
