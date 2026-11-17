@@ -66,6 +66,26 @@ class MetadataCacheTest : public QObject {
         QVERIFY(!version.data());
     }
 
+    void legacyProfilesUseDefaultEntryPoints()
+    {
+        LaunchProfile profile;
+        profile.applyMainJar(std::make_shared<Library>("com.mojang:minecraft:1.4.7:client"));
+        QVERIFY(!MinecraftLoadAndCheck::validateLaunchProfile(profile));
+        profile.applyTraits({ "legacyLaunch" });
+        QVERIFY(MinecraftLoadAndCheck::validateLaunchProfile(profile));
+        profile.applyTraits({ "noapplet" });
+        QVERIFY(MinecraftLoadAndCheck::validateLaunchProfile(profile));
+        profile.applyProblemSeverity(ProblemSeverity::Error);
+        QVERIFY(!MinecraftLoadAndCheck::validateLaunchProfile(profile));
+    }
+
+    void legacyProfilesStillRequireTheGameJar()
+    {
+        LaunchProfile profile;
+        profile.applyTraits({ "legacyLaunch" });
+        QVERIFY(!MinecraftLoadAndCheck::validateLaunchProfile(profile));
+    }
+
     void invalidOfflineMetadataFailsWithoutNetwork()
     {
         QFile file("meta/test.game/invalid.json");

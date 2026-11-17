@@ -45,7 +45,9 @@ void MinecraftLoadAndCheck::checkLaunchProfile()
 
 Result<> MinecraftLoadAndCheck::validateLaunchProfile(const LaunchProfile& profile)
 {
-    if (profile.getProblemSeverity() == ProblemSeverity::Error || profile.getMainClass().isEmpty() || !profile.getMainJar()) {
+    // LegacyLauncher supplies the default Minecraft and applet class names for old clients.
+    const bool missingMainClass = profile.getMainClass().isEmpty() && !profile.getTraits().contains("legacyLaunch");
+    if (profile.getProblemSeverity() == ProblemSeverity::Error || missingMainClass || !profile.getMainJar()) {
         return std::unexpected(tr("This version is incomplete. Reload its components before launching."));
     }
     return {};
